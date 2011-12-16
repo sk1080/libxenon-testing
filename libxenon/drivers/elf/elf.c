@@ -7,11 +7,14 @@
 #include <ppc/cache.h>
 #include <ppc/timebase.h>
 #include <time/time.h>
+#include <libfdt/libfdt.h>
+#include <nocfe/addrspace.h>
 
 #include "elf_abi.h"
 
 #define ELF_DEVTREE_START ((void*)0x87FE0000)
 #define ELF_DEVTREE_MAX_SIZE 0x10000
+#define MAX_CMDLINE_SIZE 255
 
 #define ELF_CODE_RELOC_START ((void*)0x87FF0000) /* TODO: must keep this synced with lis %r4,0x87ff and lis %r4,0x07ff in elf_run.S */
 #define ELF_TEMP_BEGIN ((void*)0x87F80000)
@@ -25,6 +28,8 @@ extern void elf_run(unsigned long entry,unsigned long devtree);
 extern void elf_hold_thread();
 
 extern volatile unsigned long elf_secondary_hold_addr;
+
+static char bootargs[MAX_CMDLINE_SIZE];
 
 static inline __attribute__((always_inline)) void elf_putch(unsigned char c)
 {
@@ -239,13 +244,71 @@ int elf_runFromDisk (char *filename)
 
 void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_size)
 {
+	int res, node;
+
 	if (dt_size>ELF_DEVTREE_MAX_SIZE){
 		printf("[ELF loader] Device tree too big (> %d bytes) !\n",ELF_DEVTREE_MAX_SIZE);
 		return;
 	}		
 	memset(ELF_DEVTREE_START,0,ELF_DEVTREE_MAX_SIZE);
-	memcpy(ELF_DEVTREE_START,dt_addr,dt_size);
-	memdcbst(ELF_DEVTREE_START,ELF_DEVTREE_MAX_SIZE);
+
+    res = fdt_open_into(dt_addr, ELF_DEVTREE_START, ELF_DEVTREE_MAX_SIZE);
+	if (res < 0){
+		printf(" ! fdt_open_into() failed\n"); 
+        return;
+    }
+
+	node = fdt_path_offset(ELF_DEVTREE_START, "/chosen");
+	if (node < 0){
+		printf(" ! /chosen node not found in devtree\n"); 
+                return;
+    }
+        
+    if (bootargs[0])
+    {
+    	res = fdt_setprop(ELF_DEVTREE_START, node, "bootargs", bootargs, strlen(bootargs)+1);
+    	if (res < 0){
+        	printf(" ! couldn't set chosen.bootargs property\n"); 
+        	return;
+     	}
+     }
+
+	 node = fdt_path_offset(ELF_DEVTREE_START, "/memory");
+	 if (node < 0){
+		printf(" ! /memory node not found in devtree\n"); 
+        return;
+     }
+/*
+	res = fdt_add_mem_rsv(ELF_DEVTREE_START, (uint64_t)ELF_DEVTREE_START, ELF_DEVTREE_MAX_SIZE);
+	if (res < 0){
+    	printf("couldn't add reservation for the devtree\n"); 
+    	return;
+	}
+*/
+
+	res = fdt_pack(ELF_DEVTREE_START);
+	if (res < 0){
+		printf(" ! fdt_pack() failed\n"); 
+        return;
+    }
+
+	printf(" * Device tree prepared\n"); 
 	
 	elf_runFromMemory(elf_addr,elf_size);
+}
+
+void kernel_build_cmdline(const char *parameters, const char *root)
+{
+	bootargs[0] = 0;
+
+	if (root) {
+		strlcat(bootargs, "root=", MAX_CMDLINE_SIZE);
+		strlcat(bootargs, root, MAX_CMDLINE_SIZE);
+		strlcat(bootargs, " ", MAX_CMDLINE_SIZE);
+	}
+
+	if (parameters)
+		strlcat(bootargs, parameters, MAX_CMDLINE_SIZE);
+
+	printf("Kernel command line: '%s'\n", bootargs);
 }
