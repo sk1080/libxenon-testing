@@ -31,6 +31,9 @@ extern volatile unsigned long elf_secondary_hold_addr;
 
 static char bootargs[MAX_CMDLINE_SIZE];
 
+static uint8_t *initrd_start = NULL;
+static size_t initrd_size = 0;
+
 static inline __attribute__((always_inline)) void elf_putch(unsigned char c)
 {
 	while (!((*(volatile uint32_t*)(0xea001000 + 0x18))&0x02000000));
@@ -272,7 +275,30 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
         	return;
      	}
      }
+	
+    if (initrd_start && initrd_size)
+	{
+		u64 start, end;
+		start = (u32)PHYSADDR((uint64_t)initrd_start);
+		res = fdt_setprop(ELF_DEVTREE_START, node, "linux,initrd-start", &start, sizeof(start));
+		if (res < 0){
+			printf("couldn't set chosen.linux,initrd-start property\n");
+            return;
+        }
 
+		end = (u32)PHYSADDR((uint64_t)initrd_start + (uint64_t)initrd_size);
+		res = fdt_setprop(ELF_DEVTREE_START, node, "linux,initrd-end", &end, sizeof(end));
+		if (res < 0) {
+			printf("couldn't set chosen.linux,initrd-end property\n");
+            return;
+        }
+		res = fdt_add_mem_rsv(ELF_DEVTREE_START, start, initrd_size);
+		if (res < 0) {
+			printf("couldn't add reservation for the initrd\n");
+            return;
+        }
+	}
+        
 	 node = fdt_path_offset(ELF_DEVTREE_START, "/memory");
 	 if (node < 0){
 		printf(" ! /memory node not found in devtree\n"); 
@@ -295,6 +321,15 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
 	printf(" * Device tree prepared\n"); 
 	
 	elf_runFromMemory(elf_addr,elf_size);
+}
+
+void kernel_set_initrd(void *start, size_t size)
+{       
+    printf("Initrd at %p/0x%lx: %ld bytes (%ldKiB)\n", start, \
+    (u32)PHYSADDR((uint64_t)start), size, size/1024);
+        
+	initrd_start = start;
+	initrd_size = size;
 }
 
 void kernel_build_cmdline(const char *parameters, const char *root)
