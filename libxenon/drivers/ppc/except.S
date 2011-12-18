@@ -100,9 +100,14 @@ ex_external:
         addis %r13, %r13, 0x8000
 
         // Setup return address
-        lis %r3, asm_external_interrupt_handler@h
-        ori %r3, %r3, asm_external_interrupt_handler@l
+        lis %r3, common_interrupt_handler@h
+        ori %r3, %r3, common_interrupt_handler@l
         mtsrr0 %r3
+
+        // Move the handler to the link register
+        lis %r3, external_interrupt_handler@h
+        ori %r3, %r3, external_interrupt_handler@l
+        mtlr %r3
 
         // Launch handler
         rfid
@@ -114,12 +119,48 @@ DO_EXCEPT(0x00000800, ex_fpu_unavailable);
 //DO_EXCEPT(0x00000900, ex_decrementer);
 . = exc_base + 0x900
 ex_decrementer:
-        rfid
-        mtsprg0 %r4
-	lis %r4, 0x7FFF
-	ori %r4, %r4, 0xFFFF
-	mtspr dec, %r4
-        mfsprg0 %r4
+        // Save registers
+        mtsprg0 %r13
+        mfspr %r13, hsprg0 // Put the processor data block on r13
+        std %r3, OFF_REG(3)(%r13)
+        mflr %r3
+        std %r3, OFF_REG(REG_LR)(%r13)
+        mfctr %r3
+        std %r3, OFF_REG(REG_CTR)(%r13)
+        mfcr %r3
+        std %r3, OFF_REG(REG_CR)(%r13)
+        mfxer %r3
+        std %r3, OFF_REG(REG_XER)(%r13)
+        mfsprg0 %r3
+        std %r3, OFF_REG(13)(%r13)
+
+        // Save both return registers
+        mfsrr0 %r3
+        std %r3, OFF_REG(REG_SRR0)(%r13)
+        mfsrr1 %r3
+        std %r3, OFF_REG(REG_SRR1)(%r13)
+
+        // Setup the MSR
+        lis %r3, 0x1000
+        sldi %r3, %r3, 32 // Hypervisor Mode
+        ori %r3, %r3, 0x3030 // Data/Instruction relocate/Machine Check/FPU
+        oris %r3, %r3, 0x200 // VPU
+        mtsrr1 %r3
+
+        // Setup r13
+        addis %r13, %r13, 0x8000
+
+        // Setup return address
+        lis %r3, common_interrupt_handler@h
+        ori %r3, %r3, common_interrupt_handler@l
+        mtsrr0 %r3
+
+        // Move the handler to the link register
+        lis %r3, decrementer_interrupt_handler@h
+        ori %r3, %r3, decrementer_interrupt_handler@l
+        mtlr %r3
+
+        // Launch handler
         rfid
 
 //DO_EXCEPT(0x00000980, ex_hypervisor_decrementer);

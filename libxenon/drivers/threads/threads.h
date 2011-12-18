@@ -6,6 +6,7 @@ extern "C" {
 #endif
     
 typedef void (*thread_interrupt_proc)(unsigned int, unsigned int);
+typedef void (*thread_ipi_proc)(unsigned int);
 
 #pragma pack(push, 1)
 
@@ -47,16 +48,22 @@ typedef struct _PROCESSOR_DATA_BLOCK
     unsigned long long Reserved0[2]; // Reserved
     
     unsigned char CurrentProcessor;  // What processor are we? (offset 0x140)
-    unsigned char HaveWeInterrupted; // Just testing...
     unsigned char Irq;               // Interrupt request level
-    unsigned char Reserved1;         // Reserved
+    unsigned char Reserved1[2];         // Reserved
     
     // Thread List
     unsigned int ThreadListLock;     // Lock this when doing thread things
     struct _THREAD *FirstThread;
     struct _THREAD *LastThread;
     
-    thread_interrupt_proc InterruptTable[0x20];      // Interrupt function pointers
+    thread_interrupt_proc InterruptTable[0x20]; // Interrupt function pointers
+    
+    // IPI data
+    unsigned int IpiLock; // Lock
+    thread_ipi_proc IpiProc;
+    unsigned int IpiContext;
+    unsigned volatile int *IpiIncrement; // This ptr is incremented after Ipi completion
+    
 } PROCESSOR_DATA_BLOCK;
 
 // The thread structure
@@ -90,7 +97,8 @@ void threading_init();
 // Thread management
 
 // Returns thread id (can be used as handle)
-unsigned int thread_create(void* entrypoint, int stack_size, void* argument);
+unsigned int thread_create(void* entrypoint, int stack_size,
+        void* argument, int create_suspended);
 
 // Swap the thread's processor
 void thread_setprocessor(unsigned int id, unsigned int processor);
@@ -99,6 +107,16 @@ void thread_setprocessor(unsigned int id, unsigned int processor);
 void thread_suspend(unsigned int id);
 void thread_resume(unsigned int id);
 unsigned int thread_get_suspend_count(unsigned int id);
+
+// Raise/Lower irql
+int thread_raise_irql(unsigned int irql);
+int thread_lower_irql(unsigned int irql);
+
+int thread_spinlock(unsigned int *lock);
+void thread_unlock(unsigned int *lock, unsigned int irql);
+
+// Runs "entrypoint" on all processors at the same time
+void thread_send_ipi(thread_ipi_proc entrypoint, unsigned int context);
 
 #ifdef	__cplusplus
 }

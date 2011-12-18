@@ -5,6 +5,7 @@
 #include <xenon_soc/xenon_power.h>
 #include <xenon_soc/xenon_secotp.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "ppc/atomic.h"
 
@@ -19,6 +20,9 @@ static unsigned int threads_online = 0;
 PROCESSOR_DATA_BLOCK *Processors[6] = {0}; // Array of all processor pointers
 THREAD_LIST ThreadList; // List of all threads
 static unsigned int ThreadListLock = 0; // Lock for the thread list
+
+// 20ms = 50000
+static unsigned int decrementer_ticks = 50000; // Default decrementer value
 
 static void thread_interrupt_unexpected(unsigned int soc_interrupt, unsigned int irq)
 {
@@ -65,16 +69,48 @@ static void thread_interrupt_ipi(unsigned int soc_interrupt, unsigned int irq)
 {
     PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
     
+    printf("Ipi on Thread %i enter at irq %i\n", processor->CurrentProcessor,
+            processor->Irq);
+    
     // Set IRQ
     std((volatile void*)(soc_interrupt + 8), 0x78);
     processor->Irq = 0x78;
     ld((volatile void*)(soc_interrupt + 8));
     
-    // Process IPIs here
+    // Process the Ipi
+    lock(&processor->IpiLock);
+    
+    // Run the function
+    if(processor->IpiProc)
+    {
+        processor->IpiProc(processor->IpiContext);
+    
+        // Clear the Ipi
+        processor->IpiProc = NULL;
+    }
+    
+    // Increment the counter
+    if(processor->IpiIncrement)
+    {
+        atomic_inc((unsigned int*)processor->IpiIncrement);
+        printf("Ipi on Thread %i Increment is %i\n",
+                processor->CurrentProcessor, *processor->IpiIncrement);
+    }
+    else
+        printf("Ipi on Thread %i failed to increment\n",
+                processor->CurrentProcessor);
+    
+    printf("Ipi on Thread %i complete\n", processor->CurrentProcessor);
+    
+    unlock(&processor->IpiLock);
+    
+    printf("Ipi on Thread %i unlocked\n", processor->CurrentProcessor);
     
     std((volatile void*)(soc_interrupt + 0x68), irq);
     processor->Irq = irq;
     ld((volatile void*)(soc_interrupt + 8));
+    
+    printf("Ipi on Thread %i exiting\n", processor->CurrentProcessor);
 }
 
 static void thread_interrupt_spurious(unsigned int soc_interrupt, unsigned int irq)
@@ -90,12 +126,107 @@ void external_interrupt_handler()
     unsigned long long interruptSource
         = ld((volatile void*)(soc_interrupt + 0x50));
     
-    //printf("External Interrupt %02X on Processor %i\n",
-      //      interruptSource, processor->CurrentProcessor);
-    
     processor->InterruptTable[interruptSource / 4](soc_interrupt, processor->Irq);
+}
+
+void decrementer_interrupt_handler()
+{
+    // TODO: Manage quantums here
     
-    //processor->MSRSave &= ~0x8000; // Disable external interrupts
+    // Reset the decrementer
+    mtspr(dec, decrementer_ticks);
+}
+
+void ipi_send_packet(thread_ipi_proc entrypoint,
+        unsigned int context,
+        char processors, unsigned volatile int *count)
+{
+    int i;
+    
+    // First set the ipi data
+    for(i = 0;i < 6;i++)
+    {
+        if(((processors) & (1 << i)) == 0)
+            continue;
+        
+        // Lock and set data
+        lock(&Processors[i]->IpiLock);
+        Processors[i]->IpiProc = entrypoint;
+        Processors[i]->IpiContext = context;
+        Processors[i]->IpiIncrement = count;
+        unlock(&Processors[i]->IpiLock);
+    }
+    
+    // Request the IPI interrupt
+    unsigned int soc_interrupt =
+        0x20050000 + (thread_get_processor_block()->CurrentProcessor * 0x1000);
+    
+    // Request interrupt 0x78 on the processor mask
+    std((volatile void*)(soc_interrupt + 0x10), ((int)processors << 16) | 0x78);
+}
+
+void thread_send_ipi(thread_ipi_proc entrypoint, unsigned int context)
+{
+    // The IPI Lock
+    static unsigned int ipi_lock = 0;
+    
+    // How many have finished the IPI
+    unsigned volatile int ipi_count = 0;
+    
+    // Make sure we are running at dispatch level
+    char irql;
+    if(thread_get_processor_block()->Irq < 2)
+        irql = thread_raise_irql(2);
+    else
+        irql = thread_get_processor_block()->Irq;
+    
+    // Make sure IPIs are one at a time
+    lock(&ipi_lock);
+    
+    // Send the IPI to other processors
+    ipi_send_packet(entrypoint, context,
+            0x3F & ~(1 << thread_get_processor_block()->CurrentProcessor),
+            &ipi_count);
+    
+    // Run the IPI ourselves
+    thread_raise_irql(0x78);
+    entrypoint(context);
+    
+    // Wait for the other processors to finish
+    while(ipi_count != 5)
+        asm volatile("db16cyc");
+    
+    printf("Ipi Finished\n");
+    
+    // Release the lock
+    unlock(&ipi_lock);
+    
+    printf("Ipi unlocked\n");
+    
+    // Lower the irql and leave
+    thread_lower_irql(irql);
+    
+    printf("Departing from Ipi\n");
+}
+
+int thread_raise_irql(unsigned int irql)
+{
+    assert(thread_get_processor_block()->Irq <= irql);
+    
+    char irq = thread_get_processor_block()->Irq;
+    thread_get_processor_block()->Irq = irql;
+    
+    return irq;
+}
+
+int thread_lower_irql(unsigned int irql)
+{
+    assert(thread_get_processor_block()->Irq >= irql);
+    
+    char irq = thread_get_processor_block()->Irq;
+    thread_get_processor_block()->Irq = irql;
+    
+    return irq;
 }
 
 void thread_idle_loop()
@@ -103,11 +234,11 @@ void thread_idle_loop()
     for(;;)
     {
         // We dont do much here
-        asm volatile("db16cyc");
+        //asm volatile("db16cyc");
         
         // TODO: check threads that can be swapped to, etc
-        delay(5);
         printf("Thread %i Spin\n", thread_get_processor_block()->CurrentProcessor);
+        delay(5);
     }
 }
 
@@ -119,9 +250,7 @@ void thread_startup()
     
     // Init processor state
     PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
-    
-    printf("Processor %i Begin Init\n",
-            processor->CurrentProcessor);
+    processor->Irq = 2;
     
     // Setup interrupts
     for(i = 0;i < 0x20;i++)
@@ -133,26 +262,18 @@ void thread_startup()
     else
         processor->InterruptTable[0x1C] = thread_interrupt_ipi_clock;
     
-    printf("Processor %i Interrupts Assigned\n",
-            processor->CurrentProcessor);
-    
     // Signal ready
     atomic_inc(&threads_online);
     
-    printf("Processor %i Ready\n",
-            processor->CurrentProcessor);
+    // Set the quantum length
+    mtspr(dec, decrementer_ticks);
     
-    printf("Processor %i Enabling Interrupts\n",
-            processor->CurrentProcessor);
-    
+    // Enable interrupts
     mtmsr(mfmsr() | 0x8000);
     
     // Main thread can leave now
     if(processor->CurrentProcessor == 0)
         return;
-    
-    printf("Processor %i Begin Idle Loop\n",
-            processor->CurrentProcessor);
     
     thread_idle_loop();
 }
@@ -171,22 +292,19 @@ void threading_init()
     threading_init_check = 1;
     
     // Init the base threading stuff
-    printf("Thread subinit\n");
     xenon_thread_startup();
     
-    printf("Init process objects\n");
     Processors[0] = thread_get_processor_block();
     for(i = 0;i < 5;i++)
         Processors[i+1] = (PROCESSOR_DATA_BLOCK*)((char*)Processors[i] + 0x1000);
     
-    printf("Init thread list\n");
     ThreadList.FirstThread = ThreadList.LastThread = NULL;
     
     // Set the cores to full speed
-    printf("Pulling CPU to full speed\n");
     xenon_make_it_faster(XENON_SPEED_FULL);
     
-    printf("Telling other threads to run init\n");
+    // Main processor startup
+    thread_startup();
     
     // Tell the other threads to run "thread_startup"
     for(i = 1;i < 6;i++)
@@ -198,13 +316,6 @@ void threading_init()
         if(res)
                 printf("Thread %i failed to run init\n", i);
     }
-    
-    printf("Running init on main thread\n");
-    
-    // Run thread_startup ourself
-    thread_startup();
-    
-    printf("Waiting for other threads to pull online\n");
     
     // Wait for the threads to complete startup
     while(threads_online !=  6)

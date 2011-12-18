@@ -12,8 +12,8 @@
 
 // Threading stuff
 
-.globl asm_external_interrupt_handler
-asm_external_interrupt_handler:
+.globl common_interrupt_handler
+common_interrupt_handler:
     // Save registers 0-2, 4-12, 14-31
     std %r0, OFF_REG(0)(%r13)
     std %r1, OFF_REG(1)(%r13)
@@ -54,9 +54,17 @@ asm_external_interrupt_handler:
     add %r1, %r4, %r1
     addi %r1, %r1, 4096-8 // Put at top of stack
 
-    // Launch the C handler
-    bl external_interrupt_handler
+    // Launch the C handler that the hv kindly put in our link register
+    // While also putting the return function in the link register
+    mflr %r4
+    mtctr %r4
+    lis %r4, common_interrupt_return@h
+    ori %r4, %r4, common_interrupt_return@l
+    mtlr %r4
+    bctr
 
+.globl common_interrupt_return
+common_interrupt_return:
     // Restore registers
     ld %r3, OFF_REG(REG_LR)(%r13)
     mtlr %r3
