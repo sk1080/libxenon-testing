@@ -1,8 +1,8 @@
 #include <ppc/timebase.h>
 #include <stdint.h>
 
-unsigned long long _system_time; // This is updated by the clock
-unsigned long long _clock_time; // Used for timers, updated by clock
+extern unsigned long long _system_time; // System Timer (Used for telling time)
+extern unsigned long long _clock_time; // Clock Timer (Used for timing stuff)
 unsigned long long get_system_time()
 {
     return _system_time;

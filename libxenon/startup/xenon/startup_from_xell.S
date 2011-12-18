@@ -131,6 +131,9 @@ after_slb:
 
         mfspr %r4, pir
         stb %r4, 0x140(%r3) // What processor are we?
+        
+        li %r4, 2
+        stb %r4, 0x141(%r3) // Irq
 
 	lis %r3,8
 	subf %r1, %r3, %r1

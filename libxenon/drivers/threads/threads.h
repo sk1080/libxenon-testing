@@ -5,10 +5,21 @@
 extern "C" {
 #endif
     
+#define MAX_THREAD_COUNT 256
+    
 typedef void (*thread_interrupt_proc)(unsigned int);
 typedef unsigned int (*thread_ipi_proc)(unsigned int);
+typedef int (*thread_proc)(void*);
 
 #pragma pack(push, 1)
+
+typedef struct _PROCESSOR_FPU_VPU_SAVE
+{
+    double Fpr[32]; // Floating save
+    double Fpscr; // Floating status save
+    float VrSave[128][4]; // Vector save (UNUSED)
+    float VscrSave[4]; // Vector status save (UNUSED)
+} PROCESSOR_FPU_VPU_SAVE;
 
 // Thread context
 typedef struct _CONTEXT
@@ -24,14 +35,7 @@ typedef struct _CONTEXT
     unsigned long long Cr;    // Condition
     unsigned long long Xer;   // Fixed Point Exception
     
-    double Fpscr;             // Floating Point Status/Control
-    double Fpr[32];
-    
-    unsigned long long UserModeControl;
-    unsigned long long Fill;
-    
-    float Vscr[4];            // Vector Status/Control
-    float Vr[128][4];         // Vector
+    PROCESSOR_FPU_VPU_SAVE FpuVpu; // Floating/Vector save
 } CONTEXT, *PCONTEXT;
 
 // The structure that lives on register 13
@@ -45,16 +49,18 @@ typedef struct _PROCESSOR_DATA_BLOCK
     unsigned long long XERSave;
     unsigned long long IARSave;      // Also SRR0 (0x120)
     unsigned long long MSRSave;      // Also SRR1 (0x128)
-    unsigned long long Reserved0[2]; // Reserved
+    PROCESSOR_FPU_VPU_SAVE *FPUVPUSave; // Saves the other regs (0x130)
+    unsigned int Reserved3;
+    unsigned long long Reserved0; // Reserved
     
     unsigned char CurrentProcessor;  // What processor are we? (offset 0x140)
-    unsigned char Irq;               // Interrupt request level
+    unsigned char Irq;               // Interrupt request level (offset 0x141)
     unsigned char Reserved1[2];         // Reserved
     
     // Thread List
-    unsigned int ThreadListLock;     // Lock this when doing thread things
     struct _THREAD *FirstThread;
     struct _THREAD *LastThread;
+    struct _THREAD *ListPtr;
     
     thread_interrupt_proc InterruptTable[0x20]; // Interrupt function pointers
     
@@ -64,13 +70,20 @@ typedef struct _PROCESSOR_DATA_BLOCK
     unsigned int IpiContext;
     unsigned volatile int *IpiIncrement; // This ptr is incremented after Ipi completion
     
+    // Scheduling stuff
+    long long QuantumEnd; // When this quantum ends (clock)
+    struct _THREAD *CurrentThread; // Currently running thread
+    
+    // Locks
+    unsigned int Lock; // To synchronize access
+    
 } PROCESSOR_DATA_BLOCK;
 
 // The thread structure
 typedef struct _THREAD
 {
     // Thread Context
-    PCONTEXT Context;
+    CONTEXT Context;
     
     // Assigned Processor
     PROCESSOR_DATA_BLOCK *ThisProcessor;
@@ -78,6 +91,32 @@ typedef struct _THREAD
     // Thread List
     struct _THREAD *NextThread;
     struct _THREAD *PreviousThread;
+    
+    struct _THREAD *NextThreadFull;
+    struct _THREAD *PreviousThreadFull;
+    
+    // If the object is valid
+    unsigned char Valid;
+    // Priority
+    unsigned char Priority;
+    // Priority boost
+    unsigned char PriorityBoost;
+    // Maximum Priority Boost
+    unsigned char MaxPriorityBoost;
+    // If we are currently running this thread
+    unsigned char ThreadIsRunning;
+    // Our suspend count
+    unsigned char SuspendCount; // A count of zero means we can't be resumed anymore (running)
+    // If the handle is still open
+    unsigned char HandleOpen; // You have to close this before we dealloc the thread object!!
+    // The thread ID (its unique, i promise)
+    unsigned char ThreadId;
+    
+    long long SleepTime; // How long until we wake up
+    
+    char * StackBase; // The bottom of our stack
+    unsigned int StackSize; // The size of our stack
+    
 } THREAD, *PTHREAD;
 
 // A list of threads
@@ -107,6 +146,9 @@ void thread_setprocessor(unsigned int id, unsigned int processor);
 void thread_suspend(unsigned int id);
 void thread_resume(unsigned int id);
 unsigned int thread_get_suspend_count(unsigned int id);
+
+// End this thread
+void thread_terminate();
 
 // Raise/Lower irql
 int thread_raise_irql(unsigned int irql);

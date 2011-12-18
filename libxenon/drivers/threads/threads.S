@@ -15,37 +15,10 @@
 .globl common_interrupt_handler
 common_interrupt_handler:
     // Save registers 0-2, 4-12, 14-31
-    std %r0, OFF_REG(0)(%r13)
-    std %r1, OFF_REG(1)(%r13)
-    std %r2, OFF_REG(2)(%r13)
-    std %r4, OFF_REG(4)(%r13)
-    std %r5, OFF_REG(5)(%r13)
-    std %r6, OFF_REG(6)(%r13)
-    std %r7, OFF_REG(7)(%r13)
-    std %r8, OFF_REG(8)(%r13)
-    std %r9, OFF_REG(9)(%r13)
-    std %r10, OFF_REG(10)(%r13)
-    std %r11, OFF_REG(11)(%r13)
-    std %r12, OFF_REG(12)(%r13)
-    std %r14, OFF_REG(14)(%r13)
-    std %r15, OFF_REG(15)(%r13)
-    std %r16, OFF_REG(16)(%r13)
-    std %r17, OFF_REG(17)(%r13)
-    std %r18, OFF_REG(18)(%r13)
-    std %r19, OFF_REG(19)(%r13)
-    std %r20, OFF_REG(20)(%r13)
-    std %r21, OFF_REG(21)(%r13)
-    std %r22, OFF_REG(22)(%r13)
-    std %r23, OFF_REG(23)(%r13)
-    std %r24, OFF_REG(24)(%r13)
-    std %r25, OFF_REG(25)(%r13)
-    std %r26, OFF_REG(26)(%r13)
-    std %r27, OFF_REG(27)(%r13)
-    std %r28, OFF_REG(28)(%r13)
-    std %r29, OFF_REG(29)(%r13)
-    std %r30, OFF_REG(30)(%r13)
-    std %r31, OFF_REG(31)(%r13)
-
+    .irp reg, 0,1,2,4,5,6,7,8,9,10,11,12,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+    std %r\reg, OFF_REG(\reg)(%r13)
+    .endr
+    
     // Setup the stack
     lis %r1, processor_interrupt_stack@h
     ori %r1, %r1, processor_interrupt_stack@l
@@ -58,6 +31,7 @@ common_interrupt_handler:
     // While also putting the return function in the link register
     mflr %r4
     mtctr %r4
+
     lis %r4, common_interrupt_return@h
     ori %r4, %r4, common_interrupt_return@l
     mtlr %r4
@@ -78,38 +52,219 @@ common_interrupt_return:
     mtsrr0 %r3
     ld %r3, OFF_REG(REG_SRR1)(%r13)
     mtsrr1 %r3
-    ld %r0, OFF_REG(0)(%r13)
-    ld %r1, OFF_REG(1)(%r13)
-    ld %r2, OFF_REG(2)(%r13)
-    ld %r3, OFF_REG(3)(%r13)
-    ld %r4, OFF_REG(4)(%r13)
-    ld %r5, OFF_REG(5)(%r13)
-    ld %r6, OFF_REG(6)(%r13)
-    ld %r7, OFF_REG(7)(%r13)
-    ld %r8, OFF_REG(8)(%r13)
-    ld %r9, OFF_REG(9)(%r13)
-    ld %r10, OFF_REG(10)(%r13)
-    ld %r11, OFF_REG(11)(%r13)
-    ld %r12, OFF_REG(12)(%r13)
-    ld %r14, OFF_REG(14)(%r13)
-    ld %r15, OFF_REG(15)(%r13)
-    ld %r16, OFF_REG(16)(%r13)
-    ld %r17, OFF_REG(17)(%r13)
-    ld %r18, OFF_REG(18)(%r13)
-    ld %r19, OFF_REG(19)(%r13)
-    ld %r20, OFF_REG(20)(%r13)
-    ld %r21, OFF_REG(21)(%r13)
-    ld %r22, OFF_REG(22)(%r13)
-    ld %r23, OFF_REG(23)(%r13)
-    ld %r24, OFF_REG(24)(%r13)
-    ld %r25, OFF_REG(25)(%r13)
-    ld %r26, OFF_REG(26)(%r13)
-    ld %r27, OFF_REG(27)(%r13)
-    ld %r28, OFF_REG(28)(%r13)
-    ld %r29, OFF_REG(29)(%r13)
-    ld %r30, OFF_REG(30)(%r13)
-    ld %r31, OFF_REG(31)(%r13)
+
+    .irp reg,0,1,2,3,4,5,6,7,8,9,10,11,12,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+    ld %r\reg, OFF_REG(\reg)(%r13)
+    .endr
+
     ld %r13, OFF_REG(13)(%r13)
 
     // Leave the interrupt
     rfid
+
+// Takes a PROCESSOR_FPU_VPU_SAVE pointer on r3
+.globl save_floating_point
+save_floating_point:
+    // Save floating point (mffs) (stfdu)
+    addi %r3, %r3, -8
+    .irp reg, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+    stfd %r\reg, OFF_REG(\reg)(%r3)
+    .endr
+
+    mffs %r4 // Status
+    stfd %r31, OFF_REG(31)(%r3)
+    blr
+
+// Takes a PROCESSOR_FPU_VPU_SAVE pointer on r3
+.globl restore_floating_point
+restore_floating_point:
+    .irp reg, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
+    lfd %r\reg, OFF_REG(\reg)(%r3)
+    .endr
+    lfd %r31, OFF_REG(32)(%r3)
+    mtfsf 0xFF, %r31  // Status
+    lfd %r31, OFF_REG(31)(%r3)
+    blr
+
+// GCC doesnt like vectors, so im commenting this out
+/*
+.globl save_vector
+save_vector: // 0x108
+    li %r7, 0x108
+    addi %r4, %r3, 0x10
+    addi %r5, %r3, 0x20
+    addi %r6, %r3, 0x30
+    mfvscr %v0 // put vscr into v0
+
+    stvxl %v0, %r3, %r7
+    stvxl %v1, %r4, %r7
+    stvxl %v2, %r5, %r7
+    stvxl %v3, %r6, %r7
+    li %r7, 0x148
+    stvxl %v4, %r3, %r7
+    stvxl %v5, %r4, %r7
+    stvxl %v6, %r5, %r7
+    stvxl %v7, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v8, %r3, %r7
+    stvxl %v9, %r4, %r7
+    stvxl %v10, %r5, %r7
+    stvxl %v11, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v12, %r3, %r7
+    stvxl %v13, %r4, %r7
+    stvxl %v14, %r5, %r7
+    stvxl %v15, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v16, %r3, %r7
+    stvxl %v17, %r4, %r7
+    stvxl %v18, %r5, %r7
+    stvxl %v19, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v20, %r3, %r7
+    stvxl %v21, %r4, %r7
+    stvxl %v22, %r5, %r7
+    stvxl %v23, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v24, %r3, %r7
+    stvxl %v25, %r4, %r7
+    stvxl %v26, %r5, %r7
+    stvxl %v27, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v28, %r3, %r7
+    stvxl %v29, %r4, %r7
+    stvxl %v30, %r5, %r7
+    stvxl %v31, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v32, %r3, %r7
+    stvxl %v33, %r4, %r7
+    stvxl %v34, %r5, %r7
+    stvxl %v35, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v36, %r3, %r7
+    stvxl %v37, %r4, %r7
+    stvxl %v38, %r5, %r7
+    stvxl %v39, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v40, %r3, %r7
+    stvxl %v41, %r4, %r7
+    stvxl %v42, %r5, %r7
+    stvxl %v43, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v44, %r3, %r7
+    stvxl %v45, %r4, %r7
+    stvxl %v46, %r5, %r7
+    stvxl %v47, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v48, %r3, %r7
+    stvxl %v49, %r4, %r7
+    stvxl %v50, %r5, %r7
+    stvxl %v51, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v52, %r3, %r7
+    stvxl %v53, %r4, %r7
+    stvxl %v54, %r5, %r7
+    stvxl %v55, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v56, %r3, %r7
+    stvxl %v57, %r4, %r7
+    stvxl %v58, %r5, %r7
+    stvxl %v59, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v60, %r3, %r7
+    stvxl %v61, %r4, %r7
+    stvxl %v62, %r5, %r7
+    stvxl %v63, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v64, %r3, %r7
+    stvxl %v65, %r4, %r7
+    stvxl %v66, %r5, %r7
+    stvxl %v67, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v68, %r3, %r7
+    stvxl %v69, %r4, %r7
+    stvxl %v70, %r5, %r7
+    stvxl %v71, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v72, %r3, %r7
+    stvxl %v73, %r4, %r7
+    stvxl %v74, %r5, %r7
+    stvxl %v75, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v76, %r3, %r7
+    stvxl %v77, %r4, %r7
+    stvxl %v78, %r5, %r7
+    stvxl %v79, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v80, %r3, %r7
+    stvxl %v81, %r4, %r7
+    stvxl %v82, %r5, %r7
+    stvxl %v83, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v84, %r3, %r7
+    stvxl %v85, %r4, %r7
+    stvxl %v86, %r5, %r7
+    stvxl %v87, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v88, %r3, %r7
+    stvxl %v89, %r4, %r7
+    stvxl %v90, %r5, %r7
+    stvxl %v91, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v92, %r3, %r7
+    stvxl %v93, %r4, %r7
+    stvxl %v94, %r5, %r7
+    stvxl %v95, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v96, %r3, %r7
+    stvxl %v97, %r4, %r7
+    stvxl %v98, %r5, %r7
+    stvxl %v99, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v100, %r3, %r7
+    stvxl %v101, %r4, %r7
+    stvxl %v102, %r5, %r7
+    stvxl %v103, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v100, %r3, %r7
+    stvxl %v101, %r4, %r7
+    stvxl %v102, %r5, %r7
+    stvxl %v103, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v104, %r3, %r7
+    stvxl %v105, %r4, %r7
+    stvxl %v106, %r5, %r7
+    stvxl %v107, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v108, %r3, %r7
+    stvxl %v109, %r4, %r7
+    stvxl %v110, %r5, %r7
+    stvxl %v111, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v112, %r3, %r7
+    stvxl %v113, %r4, %r7
+    stvxl %v114, %r5, %r7
+    stvxl %v115, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v116, %r3, %r7
+    stvxl %v117, %r4, %r7
+    stvxl %v118, %r5, %r7
+    stvxl %v119, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v120, %r3, %r7
+    stvxl %v121, %r4, %r7
+    stvxl %v122, %r5, %r7
+    stvxl %v123, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v124, %r3, %r7
+    stvxl %v125, %r4, %r7
+    stvxl %v126, %r5, %r7
+    stvxl %v127, %r6, %r7
+    addi %r7, %r7, 0x40
+    stvxl %v0, %r3, %r7 // store vscr
+    blr
+
+.globl restore_vector
+restore_vector:
+
+*/
