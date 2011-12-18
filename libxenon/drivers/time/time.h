@@ -5,9 +5,10 @@
 extern "C" {
 #endif
 
-extern void udelay(int);
-extern void mdelay(int);
-extern void delay(int);
+void stall_execution(int i); // Stalls for i microseconds
+void udelay(int);
+void mdelay(int);
+void delay(int);
 
 #ifdef __cplusplus
 };

@@ -1,12 +1,21 @@
 #include <ppc/timebase.h>
 #include <stdint.h>
 
+void stall_execution(int i)
+{
+	i = i * 0x32;
+	uint64_t t = mftb() + i;
+	while(mftb() < t)
+		asm volatile("db16cyc");
+}
+
 static void tdelay(uint64_t i)
 {
 	uint64_t t = mftb();
 	t += i;
-	while (mftb() < t) asm volatile("or 31,31,31");
-	asm volatile("or 2,2,2");
+	while (mftb() < t)
+            asm volatile("db16cyc");
+	asm volatile("db16cyc");
 }
 
 void udelay(int u)
