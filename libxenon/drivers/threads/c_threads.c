@@ -4,10 +4,12 @@
 #include <xenon_soc/xenon_io.h>
 #include <xenon_soc/xenon_power.h>
 #include <xenon_soc/xenon_secotp.h>
+#include <xenon_smc/xenon_smc.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <assert.h>
-
-#include "ppc/atomic.h"
+#include <time/time.h>
+#include <ppc/atomic.h>
 
 char processor_blocks[0x1000 * 6] = {0}; // Per-Processor Core Data Block
 char processor_interrupt_stack[0x1000 * 6] = {0}; // interrupt handling stack
@@ -24,58 +26,31 @@ static unsigned int ThreadListLock = 0; // Lock for the thread list
 // 20ms = 50000
 static unsigned int decrementer_ticks = 50000; // Default decrementer value
 
-static void thread_interrupt_unexpected(unsigned int soc_interrupt, unsigned int irq)
+static void thread_interrupt_unexpected(unsigned int soc_interrupt)
 {
     // Simple interrupt acknowledge
     std((volatile void*)(soc_interrupt + 0x60), 0);
 }
 
-static void thread_interrupt_clock(unsigned int soc_interrupt, unsigned int irq)
+static void thread_interrupt_clock(unsigned int soc_interrupt)
 {
-    PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
-    
-    // Set IRQ
-    std((volatile void*)(soc_interrupt + 8), 0x74);
-    processor->Irq = 0x74;
-    ld((volatile void*)(soc_interrupt + 8));
-    
     stw((volatile void*)0xEA00106C, 0x100);
     std((volatile void*)(soc_interrupt + 0x10), 0x3E0070);
     
-    // Here is where we would poll the debugger for a break-in
+    // Poll debugger
     
-    // Here is where we would update timers, etc
-    
-    std((volatile void*)(soc_interrupt + 0x68), irq);
-    processor->Irq = irq;
-    ld((volatile void*)(soc_interrupt + 8));
+    // Update timers
+    _clock_time += 10000;
+    _system_time += 10000;
 }
 
-static void thread_interrupt_ipi_clock(unsigned int soc_interrupt, unsigned int irq)
+static void thread_interrupt_ipi_clock(unsigned int soc_interrupt)
 {
-    PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
-    
-    // Set IRQ
-    std((volatile void*)(soc_interrupt + 8), 0x74);
-    processor->Irq = 0x74;
-    ld((volatile void*)(soc_interrupt + 8));
-    
-    std((volatile void*)(soc_interrupt + 0x68), irq);
-    processor->Irq = irq;
-    ld((volatile void*)(soc_interrupt + 8));
 }
 
-static void thread_interrupt_ipi(unsigned int soc_interrupt, unsigned int irq)
+static void thread_interrupt_ipi(unsigned int soc_interrupt)
 {
     PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
-    
-    printf("Ipi on Thread %i enter at irq %i\n", processor->CurrentProcessor,
-            processor->Irq);
-    
-    // Set IRQ
-    std((volatile void*)(soc_interrupt + 8), 0x78);
-    processor->Irq = 0x78;
-    ld((volatile void*)(soc_interrupt + 8));
     
     // Process the Ipi
     lock(&processor->IpiLock);
@@ -91,31 +66,61 @@ static void thread_interrupt_ipi(unsigned int soc_interrupt, unsigned int irq)
     
     // Increment the counter
     if(processor->IpiIncrement)
-    {
         atomic_inc((unsigned int*)processor->IpiIncrement);
-        printf("Ipi on Thread %i Increment is %i\n",
-                processor->CurrentProcessor, *processor->IpiIncrement);
-    }
-    else
-        printf("Ipi on Thread %i failed to increment\n",
-                processor->CurrentProcessor);
-    
-    printf("Ipi on Thread %i complete\n", processor->CurrentProcessor);
     
     unlock(&processor->IpiLock);
-    
-    printf("Ipi on Thread %i unlocked\n", processor->CurrentProcessor);
-    
-    std((volatile void*)(soc_interrupt + 0x68), irq);
-    processor->Irq = irq;
-    ld((volatile void*)(soc_interrupt + 8));
-    
-    printf("Ipi on Thread %i exiting\n", processor->CurrentProcessor);
 }
 
-static void thread_interrupt_spurious(unsigned int soc_interrupt, unsigned int irq)
+static void thread_interrupt_hal_smm(unsigned int soc_interrupt)
+{
+    // TODO: THIS
+    // We need DPCs so we can queue a dpc to handle the smc stuff
+    /*
+    unsigned int hal_offset = 0xEA000000;
+    
+    // Fetch
+    unsigned int message = __builtin_bswap32(lwz(hal_offset + 0x1050));
+    
+    // Output
+    printf("Hal Message: %08X\n", message);
+    
+    // Acknowledge
+    stw(hal_offset + 0x1058, __builtin_bswap32(message));
+     */
+}
+
+static void thread_interrupt_spurious(unsigned int soc_interrupt)
 {
     // Don't do anything here
+}
+
+static void thread_interrupt_vdp_isr(unsigned int soc_interrupt)
+{
+    unsigned int vdp_offset = 0xEC800000;
+    unsigned int fetch;
+    
+    fetch = lwz(vdp_offset + 0xEDC);
+    stw(vdp_offset + 0x6540, 0);
+    
+    assert(!(fetch & 0x7FFFFFFE));
+    if(fetch & 0x80000000)
+    {
+        stw(vdp_offset + 0xED8, -1);
+        fetch = lwz(vdp_offset + 0xED4);
+        if(fetch & 1)
+        {
+            fetch = lwz(vdp_offset + 0xECC);
+            
+            char * name;
+            if(fetch & 0x40000000)
+                name = "Host";
+            else
+                name = "CP";
+            
+            printf("RBBM read-error interrupt e:%d r:%d addr:%04X\n",
+                    fetch >> 31, name, (fetch >> 2) & 0x7FFF);
+        }
+    }
 }
 
 void external_interrupt_handler()
@@ -126,7 +131,27 @@ void external_interrupt_handler()
     unsigned long long interruptSource
         = ld((volatile void*)(soc_interrupt + 0x50));
     
-    processor->InterruptTable[interruptSource / 4](soc_interrupt, processor->Irq);
+    char irq = processor->Irq;
+    if((unsigned int)processor->InterruptTable[interruptSource / 4]
+            != (unsigned int)thread_interrupt_unexpected)
+    {
+        // Set our Irq
+        irq = processor->Irq;
+        std((volatile void*)(soc_interrupt + 8), interruptSource);
+        processor->Irq = interruptSource;
+            ld((volatile void*)(soc_interrupt + 8));
+    }
+        else irq = 255;
+    
+    processor->InterruptTable[interruptSource / 4](soc_interrupt);
+    
+    if(irq != 255)
+    {
+        // Restore our Irq
+        std((volatile void*)(soc_interrupt + 0x68), irq);
+        processor->Irq = irq;
+        ld((volatile void*)(soc_interrupt + 8));
+    }
 }
 
 void decrementer_interrupt_handler()
@@ -165,13 +190,16 @@ void ipi_send_packet(thread_ipi_proc entrypoint,
     std((volatile void*)(soc_interrupt + 0x10), ((int)processors << 16) | 0x78);
 }
 
-void thread_send_ipi(thread_ipi_proc entrypoint, unsigned int context)
+unsigned int thread_send_ipi(thread_ipi_proc entrypoint, unsigned int context)
 {
     // The IPI Lock
     static unsigned int ipi_lock = 0;
     
     // How many have finished the IPI
     unsigned volatile int ipi_count = 0;
+    
+    // Return value
+    unsigned int rval = 0;
     
     // Make sure we are running at dispatch level
     char irql;
@@ -190,28 +218,30 @@ void thread_send_ipi(thread_ipi_proc entrypoint, unsigned int context)
     
     // Run the IPI ourselves
     thread_raise_irql(0x78);
-    entrypoint(context);
+    rval = entrypoint(context);
     
     // Wait for the other processors to finish
     while(ipi_count != 5)
         asm volatile("db16cyc");
     
-    printf("Ipi Finished\n");
-    
     // Release the lock
     unlock(&ipi_lock);
-    
-    printf("Ipi unlocked\n");
     
     // Lower the irql and leave
     thread_lower_irql(irql);
     
-    printf("Departing from Ipi\n");
+    return rval;
 }
 
 int thread_raise_irql(unsigned int irql)
 {
-    assert(thread_get_processor_block()->Irq <= irql);
+    //assert(thread_get_processor_block()->Irq <= irql);
+    if(thread_get_processor_block()->Irq > irql)
+    {
+        printf("Thread %i tried to increase irq (%i) to a lesser value (%i)!\n",
+                thread_get_processor_block()->CurrentProcessor,
+                thread_get_processor_block()->Irq, irql);
+    }
     
     char irq = thread_get_processor_block()->Irq;
     thread_get_processor_block()->Irq = irql;
@@ -221,7 +251,13 @@ int thread_raise_irql(unsigned int irql)
 
 int thread_lower_irql(unsigned int irql)
 {
-    assert(thread_get_processor_block()->Irq >= irql);
+    //assert(thread_get_processor_block()->Irq >= irql);
+    if(thread_get_processor_block()->Irq < irql)
+    {
+        printf("Thread %i tried to lower irq (%i) to a greater value (%i)!\n",
+                thread_get_processor_block()->CurrentProcessor,
+                thread_get_processor_block()->Irq, irql);
+    }
     
     char irq = thread_get_processor_block()->Irq;
     thread_get_processor_block()->Irq = irql;
@@ -231,13 +267,17 @@ int thread_lower_irql(unsigned int irql)
 
 void thread_idle_loop()
 {
+    char proc = thread_get_processor_block()->CurrentProcessor;
     for(;;)
     {
         // We dont do much here
         //asm volatile("db16cyc");
         
         // TODO: check threads that can be swapped to, etc
-        printf("Thread %i Spin\n", thread_get_processor_block()->CurrentProcessor);
+        printf("%i %08X\n", proc, thread_get_processor_block());
+        //printf("Thread %i Spin %08X\n",
+//                thread_get_processor_block()->CurrentProcessor,
+//                thread_get_processor_block());
         delay(5);
     }
 }
@@ -255,12 +295,14 @@ void thread_startup()
     // Setup interrupts
     for(i = 0;i < 0x20;i++)
         processor->InterruptTable[i] = thread_interrupt_unexpected;
+    processor->InterruptTable[0x5] = thread_interrupt_hal_smm;
+    processor->InterruptTable[0x16] = thread_interrupt_vdp_isr;
+    if(processor->CurrentProcessor != 0)
+        processor->InterruptTable[0x1C] = thread_interrupt_ipi_clock;
+    else
+        processor->InterruptTable[0x1D] = thread_interrupt_clock;
     processor->InterruptTable[0x1E] = thread_interrupt_ipi;
     processor->InterruptTable[0x1F] = thread_interrupt_spurious;
-    if(processor->CurrentProcessor == 0)
-        processor->InterruptTable[0x1D] = thread_interrupt_clock;
-    else
-        processor->InterruptTable[0x1C] = thread_interrupt_ipi_clock;
     
     // Signal ready
     atomic_inc(&threads_online);

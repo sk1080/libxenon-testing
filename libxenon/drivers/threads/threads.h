@@ -5,8 +5,8 @@
 extern "C" {
 #endif
     
-typedef void (*thread_interrupt_proc)(unsigned int, unsigned int);
-typedef void (*thread_ipi_proc)(unsigned int);
+typedef void (*thread_interrupt_proc)(unsigned int);
+typedef unsigned int (*thread_ipi_proc)(unsigned int);
 
 #pragma pack(push, 1)
 
@@ -116,7 +116,7 @@ int thread_spinlock(unsigned int *lock);
 void thread_unlock(unsigned int *lock, unsigned int irql);
 
 // Runs "entrypoint" on all processors at the same time
-void thread_send_ipi(thread_ipi_proc entrypoint, unsigned int context);
+unsigned int thread_send_ipi(thread_ipi_proc entrypoint, unsigned int context);
 
 #ifdef	__cplusplus
 }
