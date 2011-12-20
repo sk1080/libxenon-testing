@@ -145,59 +145,19 @@ function fail_exit {
 }
 
 function libxenon_install {
-	rm -rf free60 &>/dev/null
-
-	#check if git is present to download and install libxenon
-	git &>/dev/null
-	RETVAL=$?
-
-	if [ $RETVAL -eq 1 ]; then
-#		echo -e "Downloading libxenon..."
-#		git clone git://free60.git.sourceforge.net/gitroot/free60/free60 $LOG
-		echo -e "Building libxenon..."
-		make -C ../libxenon/ports/xenon libxenon.a >> $LOGFILE 2>&1 || exit 1
-		make -C ../libxenon/ports/xenon install >> $LOGFILE 2>&1 || exit 1
-		cp  ../devkitxenon/app.lds ../devkitxenon/rules $PREFIX/
-		# startup crt fix
-		cp ../libxenon/startup/xenon/crt1.o /usr/local/xenon/xenon/lib/
-		cp ../libxenon/ports/xenon/crti.o /usr/local/xenon/xenon/lib/
-		cp ../libxenon/ports/xenon/crtn.o /usr/local/xenon/xenon/lib/
-		echo
-		echo -e "libxenon installed successfully"
-		echo
-	else
-		echo
-		echo -e "git is needed to download libxenon, install it and run this script again with \"libxenon\" as argument"
-		echo -e "If you are running debian/ubuntu : sudo apt-get install git"
-		echo
-	fi
+    echo -e "Building libxenon..."
+    make -C ../libxenon/ports/xenon libxenon.a >> $LOGFILE 2>&1 || fail_exit "libxenon build failed"
+    make DESTDIR=$DESTDIR -C ../libxenon/ports/xenon install >> $LOGFILE 2>&1 || fail_exit "libxenon install failed"
+    echo -e "libxenon installed successfully"
 }
 function cube {
-	rm -rf free60 &>/dev/null
-	rm cube.elf32 &>/dev/null
-
-	#check if git is present to download and install libxenon
-	git &>/dev/null
-	RETVAL=$?
-
-	if [ $RETVAL -eq 1 ]; then
-
-		echo -e "Downloading Cube Sample"
-		git clone git://free60.git.sourceforge.net/gitroot/free60/free60  >> $LOGFILE 2>&1
-		echo -e "Building Cube Sample..."
-		make -C free60/devkitxenon/examples/xenon/graphics/cube >> $LOGFILE 2>&1
-		cp free60/devkitxenon/examples/xenon/graphics/cube/cube.elf32 .
-		echo
-		echo -e "cube.elf32 compiled, run it via xell"
-		echo		
-		
-	else
-		echo
-		echo -e "git is needed to download libxenon, install it and run this script again with \"libxenon\" as argument"
-		echo -e "If you are running debian/ubuntu : sudo apt-get install git"
-		echo
-	fi
-	exit 0	
+    rm cube.elf32 &>/dev/null
+    
+    echo -e "Building Cube Sample..."
+    make -C ../devkitxenon/examples/xenon/graphics/cube clean >> $LOGFILE 2>&1 || fail_exit "failed cleaning cube sample"
+    make -C ../devkitxenon/examples/xenon/graphics/cube >> $LOGFILE 2>&1 || fail_exit "failed building cube sample"
+    cp ../devkitxenon/examples/xenon/graphics/cube/cube.elf32 .
+    echo -e "cube.elf32 compiled, run it via xell"
 }
 function all_done {
 	RED='\e[0;31m'
