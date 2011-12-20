@@ -37,6 +37,14 @@
           <in>telnet_console.c</in>
           <in>telnet_console.h</in>
         </df>
+        <df name="debug">
+          <in>c_debug.c</in>
+          <in>debug.S</in>
+          <in>debug.h</in>
+          <in>debug_defines.h</in>
+          <in>gdb.c</in>
+          <in>gdb.h</in>
+        </df>
         <df name="diskio">
           <in>ata.c</in>
           <in>ata.h</in>
@@ -440,14 +448,6 @@
           </cTool>
         </makeTool>
       </makefileType>
-      <item path="../../libxenon/ports/xenon/crt0.s" ex="false" tool="4" flavor="0">
-      </item>
-      <item path="../../libxenon/ports/xenon/crt1.s" ex="false" tool="4" flavor="0">
-      </item>
-      <item path="../../libxenon/ports/xenon/crti.s" ex="false" tool="4" flavor="0">
-      </item>
-      <item path="../../libxenon/ports/xenon/crtn.s" ex="false" tool="4" flavor="0">
-      </item>
     </conf>
   </confs>
 </configurationDescriptor>

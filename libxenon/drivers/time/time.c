@@ -31,8 +31,8 @@ static void tdelay(uint64_t i)
 	uint64_t t = mftb();
 	t += i;
 	while (mftb() < t)
-            asm volatile("db16cyc");
-	asm volatile("db16cyc");
+            asm volatile("or %r1, %r1, %r1");
+	asm volatile("or %r2, %r2, %r2");
 }
 
 void udelay(int u)

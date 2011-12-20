@@ -12,13 +12,57 @@
 
 // Threading stuff
 
+.globl thread_disable_interrupts
+thread_disable_interrupts:
+    li %r4, 0
+    mfmsr %r3
+    mtmsrd %r4, 1
+    blr
+.globl thread_enable_interrupts
+thread_enable_interrupts:
+    mtmsrd %r3, 1
+    blr
+
+// Thread safe locking
+.globl spinlock
+spinlock:
+        // First we turn off interrupts
+        mfmsr   %r5
+        li      %r4, 0
+1:
+        mtmsrd  %r4, 1
+
+        // Load from the lock
+        lwarx   %r6, 0, %r3
+        // If lock is zero, attempt to place the lock address into it
+        cmplwi  cr7, %r6, 0
+        bne-    cr7, 2f
+        mr      %r6, %r3
+2:
+        // Store into the lock and restore interrupts
+        stwcx.  %r6, 0, %r3
+        mtmsrd  %r5, 1
+        // If store was not successful, try again
+        bne-    3f
+        // If lock was not successful, try again
+        bne-    cr6, 3f
+        // Lock is a success, sync and return
+        lwsync
+        blr
+3:
+        // Delay for 16 cycles and try again
+        db16cyc
+        b       1b
+
 .globl common_interrupt_handler
 common_interrupt_handler:
     // Save registers 0-2, 4-12, 14-31
     .irp reg, 0,1,2,4,5,6,7,8,9,10,11,12,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
     std %r\reg, OFF_REG(\reg)(%r13)
     .endr
-    
+
+// Dont do this for now    
+/*
     // Setup the stack
     lis %r1, processor_interrupt_stack@h
     ori %r1, %r1, processor_interrupt_stack@l
@@ -26,8 +70,9 @@ common_interrupt_handler:
     slwi %r4, %r4, 12
     add %r1, %r4, %r1
     addi %r1, %r1, 4096-8 // Put at top of stack
+*/
 
-    // Launch the C handler that the hv kindly put in our link register
+    // Launch the handler that the hv kindly put in our link register
     // While also putting the return function in the link register
     mflr %r4
     mtctr %r4
@@ -66,7 +111,6 @@ common_interrupt_return:
 .globl save_floating_point
 save_floating_point:
     // Save floating point (mffs) (stfdu)
-    addi %r3, %r3, -8
     .irp reg, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
     stfd %r\reg, OFF_REG(\reg)(%r3)
     .endr

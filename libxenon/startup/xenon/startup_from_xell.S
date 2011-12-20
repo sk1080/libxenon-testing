@@ -236,8 +236,9 @@ return_to_xell:
 		addi    %r5,%r5,4
 		bdnz    1b
 
-		/* Clear IR/DR, set 64 bit mode and jump to Xell*/
+		/* Clear IR/DR/EE, set 64 bit mode and jump to Xell*/
 	li	%r4,0x30
+        ori     %r4,%r4,0x8000
 	mfmsr	%r3
 	andc	%r3,%r3,%r4
 	lis 	%r4,0x8000

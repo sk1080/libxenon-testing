@@ -7,6 +7,8 @@
 #include <ppc/cache.h>
 #include <ppc/register.h>
 #include <xetypes.h>
+#include <threads/threads.h>
+#include <debug/debug.h>
 
 #define CPU_STACK_TRACE_DEPTH		10
 
@@ -133,7 +135,7 @@ void crashdump(u32 exception,u64 * context)
 		
 	flush_console();
 	
-	sprintf(text,"%spir=%016llx dar=%016llx\nsr0=%016llx sr1=%016llx lr=%016llx\n\n",
+	sprintf(text,"%spir=%016llx dar=%016llx\nIar=%016llx Msr=%016llx lr=%016llx\n\n",
 			text,context[39],context[38],context[36],context[37],context[32]);
 	
 	flush_console();

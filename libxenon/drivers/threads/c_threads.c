@@ -24,20 +24,26 @@ static unsigned int threads_online = 0;
 // Random Data
 PROCESSOR_DATA_BLOCK *Processors[6] = {0}; // Array of all processor pointers
 THREAD_LIST ThreadList; // List of all threads
-THREAD ThreadPool[MAX_THREAD_COUNT] = {0}; // The thread pool
+THREAD ThreadPool[MAX_THREAD_COUNT]; // The thread pool
 
 // Lock this if you ever have to lock more than one processor at once
 // AND LOCK IT FIRST
 static unsigned int ThreadListLock = 0; // Lock for the thread list
 
-
 // 20ms = 50000
 static unsigned int decrementer_ticks = 50000; // Default decrementer value
 
-void save_floating_point(PROCESSOR_FPU_VPU_SAVE* ptr);
-void restore_floating_point(PROCESSOR_FPU_VPU_SAVE* ptr);
-void save_vector(PROCESSOR_FPU_VPU_SAVE* ptr);
-void restore_vector(PROCESSOR_FPU_VPU_SAVE* ptr);
+int thread_spinlock(unsigned int *addr)
+{
+    char irql = thread_raise_irql(2);
+    lock(addr);
+    return irql;
+}
+void thread_unlock(unsigned int *addr, unsigned int irql)
+{
+    unlock(addr);
+    thread_lower_irql(irql);
+}
 
 static void thread_interrupt_unexpected(unsigned int soc_interrupt)
 {
@@ -47,6 +53,7 @@ static void thread_interrupt_unexpected(unsigned int soc_interrupt)
 
 unsigned long long _system_time = 0; // System Timer (Used for telling time)
 unsigned long long _clock_time = 0; // Clock Timer (Used for timing stuff)
+unsigned long long _millisecond_clock_time = 0; // Millisecond Clock Timer
 static void thread_interrupt_clock(unsigned int soc_interrupt)
 {
     stw((volatile void*)0xEA00106C, 0x01000000);
@@ -57,6 +64,7 @@ static void thread_interrupt_clock(unsigned int soc_interrupt)
     // Update timers
     _clock_time += 10000;
     _system_time += 10000;
+    _millisecond_clock_time += 1;
 }
 
 static void thread_interrupt_ipi_clock(unsigned int soc_interrupt)
@@ -223,14 +231,26 @@ PTHREAD thread_schedule_core()
 {
     PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
     
-    // Walk the thread list, find the first thread with the highest priority
-    //PTHREAD pthr = processor->FirstThread;
+    // Skip any sleeping/suspended threads
     PTHREAD pthr = processor->ListPtr;
+    while(pthr->SuspendCount || (pthr->SleepTime != 0))
+        pthr = pthr->NextThread;
+    // It is VERY VERY important that the idle thread never sleep or get suspended
+    // Otherwise we will be STUCK IN AN INFINITE LOOP HERE >.<
+    
+    // Walk the thread list, find the first thread with the highest priority
     PTHREAD winThread = pthr;
     do
     {
-        // Check for suspend
-        if(pthr->SuspendCount == 0)
+        // Process timer
+        if(pthr->SleepTime)
+        {
+            if(((signed long long)(pthr->SleepTime - _millisecond_clock_time)) < 0)
+                pthr->SleepTime = 0;
+        }
+        
+        // Check for suspend/sleep
+        if(pthr->SleepTime == 0 && pthr->SuspendCount == 0)
         {
                 if((pthr->Priority + pthr->PriorityBoost)
                         > (winThread->Priority + winThread->PriorityBoost))
@@ -243,8 +263,8 @@ PTHREAD thread_schedule_core()
         
         pthr = pthr->NextThread;
     } while(pthr != processor->ListPtr);
-    processor->ListPtr = pthr->NextThread;
-    return pthr;
+    processor->ListPtr = winThread->NextThread;
+    return winThread;
 }
 
 // Schedules for the currently running thread, in the context of the thread
@@ -286,6 +306,9 @@ void thread_schedule()
     
     // Unlock the processor
     unlock(&processor->Lock);
+    
+    // Clear any outstanding reservations
+    // thread_clear_lwarx();
 }
 
 void decrementer_interrupt_handler()
@@ -298,6 +321,35 @@ void decrementer_interrupt_handler()
     
     // Reset the decrementer (used as the quantum timer)
     mtspr(dec, decrementer_ticks);
+}
+
+void system_call_handler()
+{
+    // Any system call generates a thread swap, regardless of your IRQL
+    // (who needs syscalls? this entire thing runs in hv mode anyways)
+    // Before swapping, it will set your IRQL to zero
+    // Best used in functions that require a timer, or objects to be waited on
+    
+    thread_get_processor_block()->Irq = 0;
+    thread_schedule();
+}
+
+void thread_sleep(int milliseconds)
+{
+    PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
+    unsigned long long sleep_time = _millisecond_clock_time + milliseconds;
+    
+    // Raise IRQ so we aren't rescheduled while setting this up
+    thread_raise_irql(2);
+    lock(&processor->Lock);
+    
+    // Set our sleep time
+    processor->CurrentThread->SleepTime = sleep_time;
+    
+    unlock(&processor->Lock);
+    
+    // System call to signal thread swap
+    asm volatile("sc");
 }
 
 void ipi_send_packet(thread_ipi_proc entrypoint,
@@ -365,12 +417,8 @@ unsigned int thread_send_ipi(thread_ipi_proc entrypoint, unsigned int context)
     // Release the lock
     unlock(&ipi_lock);
     
-    printf("Lowing to %i Irq\n", irql);
-    
     // Lower the irql and leave
     thread_lower_irql(irql);
-    
-    printf("Now at %i Irq\n", thread_get_processor_block()->Irq);
     
     return rval;
 }
@@ -396,21 +444,10 @@ PTHREAD thread_pool_alloc()
     return NULL; // Out of threads!
 }
 
-void thread_insert(PTHREAD pthr)
-{
-    PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
-    
-    // Link the list
-    pthr->NextThread = processor->FirstThread;
-    pthr->PreviousThread = processor->LastThread;
-    processor->FirstThread->PreviousThread = pthr;
-    processor->LastThread->NextThread = pthr;
-    processor->FirstThread = pthr;
-}
-
 int thread_raise_irql(unsigned int irql)
 {
     //assert(thread_get_processor_block()->Irq <= irql);
+    unsigned int msr = thread_disable_interrupts();
     if(thread_get_processor_block()->Irq > irql)
     {
         printf("Thread %i tried to increase irq (%i) to a lesser value (%i)!\n",
@@ -420,6 +457,7 @@ int thread_raise_irql(unsigned int irql)
     
     char irq = thread_get_processor_block()->Irq;
     thread_get_processor_block()->Irq = irql;
+    thread_enable_interrupts(msr);
     
     return irq;
 }
@@ -427,6 +465,7 @@ int thread_raise_irql(unsigned int irql)
 int thread_lower_irql(unsigned int irql)
 {
     //assert(thread_get_processor_block()->Irq >= irql);
+    unsigned int msr = thread_disable_interrupts();
     if(thread_get_processor_block()->Irq < irql)
     {
         printf("Thread %i tried to lower irq (%i) to a greater value (%i)!\n",
@@ -436,28 +475,12 @@ int thread_lower_irql(unsigned int irql)
     
     char irq = thread_get_processor_block()->Irq;
     thread_get_processor_block()->Irq = irql;
+    thread_enable_interrupts(msr);
     
     return irq;
 }
 
-void thread_idle_loop()
-{
-    char proc = thread_get_processor_block()->CurrentProcessor;
-    for(;;)
-    {
-        // We dont do much here
-        //asm volatile("db16cyc");
-        
-        // TODO: check threads that can be swapped to, etc
-        delay(5);
-        printf("%i %08X\n", proc, thread_get_processor_block());
-        //printf("Thread %i Spin %08X\n",
-//                thread_get_processor_block()->CurrentProcessor,
-//                thread_get_processor_block());
-    }
-}
-
-void thread_terminate()
+void thread_terminate(unsigned int returnCode)
 {
     PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
     
@@ -469,33 +492,23 @@ void thread_terminate()
     processor->CurrentThread->Valid = 0;
     unlock(&processor->Lock);
     
-    // Put us down to zero (at this point, we may be eaten by the scheduler)
-    thread_lower_irql(0);
-    
     // Call for another thread to take its place
-    thread_schedule();
+    asm volatile("sc");
 }
 
 void thread_proc_startup(thread_proc entrypoint, void* argument)
 {
-   printf("Thread Startup\n");
-    
-   int retval = entrypoint(argument);
-    
-   printf("Thread returned %i\n", retval);
-    
-   thread_terminate();
+   thread_terminate(entrypoint(argument));;
 }
 
-unsigned int thread_create(void* entrypoint, int stack_size,
-        void* argument, int create_suspended)
+PTHREAD thread_create(void* entrypoint, unsigned int stack_size,
+        void* argument, unsigned int flags)
 {
     PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
-    unsigned int thread_id = 0xFFFFFFFF;
+    PTHREAD pthr = NULL;
     
     // Lock the processor
-    int irql = thread_raise_irql(2);
-    lock(&processor->Lock);
+    int irql = thread_spinlock(&processor->Lock);
     
     // Round up to nearest 4kb, min 16kb
     if(stack_size < 16*1024)
@@ -508,7 +521,7 @@ unsigned int thread_create(void* entrypoint, int stack_size,
     if(stack != NULL)
     {
         // Get a thread object
-        PTHREAD pthr = thread_pool_alloc();
+        pthr = thread_pool_alloc();
         if(pthr != NULL)
         {
             // Setup thread vars
@@ -517,6 +530,8 @@ unsigned int thread_create(void* entrypoint, int stack_size,
             pthr->Priority = 7; // Base priority
             pthr->MaxPriorityBoost = 5; // Default boost
             pthr->Valid = 1;
+            
+            pthr->ThisProcessor = thread_get_processor_block();
             
             // Insert into list
             unlock(&processor->Lock);
@@ -537,32 +552,99 @@ unsigned int thread_create(void* entrypoint, int stack_size,
             
             unlock(&ThreadListLock);
             
-            if(create_suspended)
+            if(flags & THREAD_FLAG_CREATE_SUSPENDED)
                 pthr->SuspendCount = 1;
             
             // Setup the registers
-            pthr->Context.Gpr[1] = pthr->StackBase + pthr->StackSize - 8; // Stack Ptr
-            pthr->Context.Iar = thread_proc_startup; // Address
-            pthr->Context.Gpr[3] = entrypoint; // Entry point
-            pthr->Context.Gpr[4] = argument; // Argument
+            pthr->Context.Gpr[1] = // Stack Ptr
+                    (unsigned int)(pthr->StackBase + pthr->StackSize - 8);
+            pthr->Context.Gpr[13] = (unsigned int)(thread_get_processor_block()); // PCR
+            pthr->Context.Iar = (unsigned int)thread_proc_startup; // Address
+            pthr->Context.Gpr[3] = (unsigned int)entrypoint; // Entry point
+            pthr->Context.Gpr[4] = (unsigned int)argument; // Argument
             pthr->Context.Msr = 0x100000000200B030; // Machine State
-            
-            thread_id = pthr->ThreadId;
         }
     }
     
     unlock(&processor->Lock);
     thread_lower_irql(irql);
     
-    return thread_id;
+    return pthr;
+}
+
+int thread_suspend(PTHREAD pthr)
+{
+    int ret = -1;
+    int irql = thread_spinlock(&ThreadListLock);
+    lock(&pthr->ThisProcessor->Lock);
+    
+    if(pthr->SuspendCount < 80)
+    {
+        ret = pthr->SuspendCount;
+        pthr->SuspendCount++;
+    }
+    
+    unlock(&pthr->ThisProcessor->Lock);
+    thread_unlock(&ThreadListLock, irql);
+    
+    return ret;
+}
+
+int thread_resume(PTHREAD pthr)
+{
+    int ret = -1;
+    
+    int irql = thread_spinlock(&ThreadListLock);
+    lock(&pthr->ThisProcessor->Lock);
+    
+    if(pthr->SuspendCount)
+    {
+        ret = pthr->SuspendCount;
+        pthr->SuspendCount--;
+    }
+    
+    unlock(&pthr->ThisProcessor->Lock);
+    thread_unlock(&ThreadListLock, irql);
+    
+    return ret;
+}
+
+void thread_set_priority(PTHREAD pthr, unsigned int priority)
+{
+    if(priority > 15)
+    {
+        printf("thread_set_priority: Tried to set priority above 15!\n");
+        return;
+    }
+    
+    unsigned int irql = thread_spinlock(&ThreadListLock);
+    lock(&pthr->ThisProcessor->Lock);
+    
+    pthr->Priority = priority;
+    
+    unlock(&pthr->ThisProcessor->Lock);
+    thread_unlock(&ThreadListLock, irql);
+}
+
+void thread_idle_loop()
+{
+    //char proc = thread_get_processor_block()->CurrentProcessor;
+    for(;;)
+    {
+        // We dont do much here
+        asm volatile("db16cyc");
+        
+        // Invoke the scheduler by system calling
+        asm volatile("sc");
+    }
 }
 
 // This function sets up the thread state
-// meant to be called in the context of the thread
+// meant to be called in the context of the thread on core 0 (main())
 void thread_startup()
 {
     int i;
-    static int thread_startup_lock = 0;
+    static unsigned int thread_startup_lock = 0;
     
     // Init processor state
     PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
@@ -622,6 +704,13 @@ void thread_startup()
     unlock(&processor->Lock);
     unlock(&ThreadListLock);
     
+    if(processor->CurrentProcessor == 0)
+    {
+        // We need to setup another thread for idling on this core
+        PTHREAD pthr_idle = thread_create(thread_idle_loop, 0, NULL, 0);
+        thread_set_priority(pthr_idle, 0);
+    }
+    
     
     // Signal ready
     atomic_inc(&threads_online);
@@ -642,12 +731,64 @@ void thread_startup()
     thread_idle_loop();
 }
 
-// Starts up threading alltogether
+unsigned int quantum_length_ipi_routine(unsigned int context)
+{
+    // Just set the decrementer
+    mtdec(context);
+    return 0;
+}
+
+void process_set_quantum_length(unsigned int milliseconds)
+{
+    // Set the tick value
+    decrementer_ticks = milliseconds * 2500;
+    
+    // Set the decrementer on all threads at once
+    thread_send_ipi(quantum_length_ipi_routine, milliseconds * 2500);
+}
+
+static int threading_init_check = 0;
+
+extern unsigned int wait[];
+unsigned int thread_idle_ipi(unsigned int context)
+{
+    // Clear out the thread state
+    wait[mfspr(pir) * 2] = 0;
+    wait[mfspr(pir) * 2 + 1] = 0;
+    
+    for(;;)
+    {
+        asm volatile("or %r1, %r1, %r1");
+        if(wait[mfspr(pir) * 2] != 0)
+        {
+            asm volatile("or %r2, %r2, %r2");
+            
+            // Set stack
+            asm volatile("mr 1, %0" : : "r" (wait[mfspr(pir) * 2 + 1]));
+            
+            // Branch
+            ((void(*)())wait[mfspr(pir) * 2])();
+        }
+    }
+    
+    return 0;
+}
+
+// Shuts down threading
+void threading_shutdown()
+{
+    if(threading_init_check == 0)
+        return;
+    
+    thread_raise_irql(0x7C);
+    thread_disable_interrupts();
+}
+
+// Starts up threading
 void threading_init()
 {
     int i;
     
-    static int threading_init_check = 0;
     if(threading_init_check)
     {
         printf("Threading already init'd!\n");
@@ -661,6 +802,9 @@ void threading_init()
     Processors[0] = thread_get_processor_block();
     for(i = 0;i < 5;i++)
         Processors[i+1] = (PROCESSOR_DATA_BLOCK*)((char*)Processors[i] + 0x1000);
+    
+    // Wipe all the thread objects
+    memset(ThreadPool, 0, sizeof(THREAD)*MAX_THREAD_COUNT);
     
     ThreadList.FirstThread = ThreadList.LastThread = NULL;
     

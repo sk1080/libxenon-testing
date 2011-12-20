@@ -49,7 +49,7 @@ void (*stdout_hook)(const char *text, int len) = 0;
 extern void putch(unsigned char c);
 
 ssize_t vfs_console_write(struct vfs_file_s *file, const void *src, size_t len)
-{       
+{
 	if (stdout_hook)
 		stdout_hook(src, len);
 	size_t i;
