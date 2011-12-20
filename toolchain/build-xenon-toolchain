@@ -5,7 +5,7 @@
 # cleanup by Austin Morton <amorton@juvsoft.com>, still public domain
 
 #User configurables
-PARALLEL="-j 6"		# Or: PARALLEL="-j 2"
+PARALLEL=""		# Or: PARALLEL="-j 2"
 LOGFILE="`pwd`/build.log" # path to the logfile
 BUILD_BINUTILS=true
 BUILD_GCC=true
