@@ -162,7 +162,7 @@ install: libxenon.a
 	install -m 0664 ../../drivers/newlib/dirent.h $(DESTDIR)/$(prefix)/$(INCLUDEDIR)/sys/
 	install -m 0775 ../../../devkitxenon/rules $(DESTDIR)/$(prefix)/
 	install -m 0664 ../../../devkitxenon/app.lds $(DESTDIR)/$(prefix)/
-	install -m 0664 ../../startup/xenon/crt1.o $(DESTDIR)/$(prefix)/$(LIBDIR)/
-	install -m 0664 crti.o $(DESTDIR)/$(prefix)/$(LIBDIR)/
-	install -m 0664 crtn.o $(DESTDIR)/$(prefix)/$(LIBDIR)/
+	install -m 0664 ../../startup/xenon/crt1.o $(DESTDIR)/$(prefix)/xenon/lib/
+	install -m 0664 crti.o $(DESTDIR)/$(prefix)/xenon/lib/
+	install -m 0664 crtn.o $(DESTDIR)/$(prefix)/xenon/lib/
 	find $(DESTDIR)/$(prefix)/$(INCLUDEDIR)/ -type f \! -name "*.h" -delete
