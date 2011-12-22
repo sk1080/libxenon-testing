@@ -8,7 +8,7 @@
 #include <ppc/register.h>
 #include <xetypes.h>
 #include <threads/threads.h>
-#include <debug/debug.h>
+#include <threads/debug.h>
 
 #define CPU_STACK_TRACE_DEPTH		10
 

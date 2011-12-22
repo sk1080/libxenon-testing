@@ -23,34 +23,24 @@ thread_enable_interrupts:
     mtmsrd %r3, 1
     blr
 
-// Thread safe locking
 .globl spinlock
 spinlock:
-        // First we turn off interrupts
-        mfmsr   %r5
-        li      %r4, 0
+        li      %r8, 0
 1:
-        mtmsrd  %r4, 1
-
-        // Load from the lock
-        lwarx   %r6, 0, %r3
-        // If lock is zero, attempt to place the lock address into it
-        cmplwi  cr7, %r6, 0
-        bne-    cr7, 2f
-        mr      %r6, %r3
+        mfmsr   %r7
+        mtmsrd  %r8, 1 // Disable interrupts
+        lwarx   %r4, 0, %r3
+        cmplwi  cr7, %r4, 0
+        bne     cr7, 2f // If r4 is not zero, dont modify
+        mr      %r4, %r3
 2:
-        // Store into the lock and restore interrupts
-        stwcx.  %r6, 0, %r3
-        mtmsrd  %r5, 1
-        // If store was not successful, try again
-        bne-    3f
-        // If lock was not successful, try again
-        bne-    cr6, 3f
-        // Lock is a success, sync and return
+        stwcx.  %r13, 0, %r3
+        mtmsrd  %r7, 1 // Restore interrupts
+        bne     cr7, 3f // r4 was not zero, lock again
+        bne     3f // Reservation invalid, lock again
         lwsync
         blr
 3:
-        // Delay for 16 cycles and try again
         db16cyc
         b       1b
 

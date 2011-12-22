@@ -113,3 +113,16 @@ void vm_set_user_mapping_segfault_handler(vm_segfault_handler_t handler)
 {
 	vm_segfault_handler=handler;
 }
+
+uint32_t vm_is_address_valid(uint32_t virt_addr)
+{
+    if(pagetable[virt_addr >> 28] == 0)
+        return 0;
+    if(pagetable[virt_addr >> 28] != -1)
+        return 1;
+    
+    if(userpagetable[vm_common_check_get_idx(virt_addr,0)] == 0)
+        return 0;
+    
+    return 1;
+}

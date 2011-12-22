@@ -116,9 +116,9 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/elf/elf_run.o \
 	../../drivers/threads/threads.o \
 	../../drivers/threads/c_threads.o \
-	../../drivers/debug/debug.o \
-	../../drivers/debug/c_debug.o \
-	../../drivers/debug/gdb.o
+	../../drivers/threads/debug.o \
+	../../drivers/threads/c_debug.o \
+	../../drivers/threads/gdb.o
 
 
 # Build rules

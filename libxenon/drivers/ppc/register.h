@@ -21,6 +21,15 @@
       asm volatile("mfspr %0," __stringify(rn) \
              : "=r" (rval)); rval;})
 
+#define mfsprg0() ({unsigned long long rval; \
+      asm volatile("mfsprg0 %0" : "=r" (rval)); rval;})
+#define mfsprg1() ({unsigned long long rval; \
+      asm volatile("mfsprg1 %0" : "=r" (rval)); rval;})
+#define mtsprg0(rn) ({unsigned long long rval; \
+      asm volatile("mtsprg0 %0" : "=r" (rval)); rval;})
+#define mtsprg1(rn) ({unsigned long long rval; \
+      asm volatile("mtsprg1 %0" : "=r" (rval)); rval;})
+
 #define mfspr64(rn) ({unsigned long long rval; \
       asm volatile("mfspr %0," __stringify(rn) \
              : "=r" (rval)); rval;})

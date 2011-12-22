@@ -60,7 +60,36 @@ debug_lock:
 
 //DO_EXCEPT(0x00000100, ex_reset);
 DO_EXCEPT(0x00000200, ex_machine_check);
-DO_EXCEPT(0x00000300, ex_data_storage);
+//DO_EXCEPT(0x00000300, ex_data_storage);
+. = exc_base + 0x300
+    mtsprg0 %r31
+    mfsprg1 %r31
+
+    // Save 2-6, 13, 15
+    .irp reg, 2,3,4,5,6,13,15
+    std %r\reg, OFF_REG(\reg)(%r31)
+    .endr
+    mfsprg0 %r3
+    std %r3, OFF_REG(31)(%r31)
+
+    // Save Cr, Xer, Lr, and Ctr
+    mfcr %r3
+    std %r3, OFF_REG(REG_CR)(%r31)
+    mfxer %r3
+    std %r3, OFF_REG(REG_XER)(%r31)
+    mflr %r3
+    std %r3, OFF_REG(REG_LR)(%r31)
+    mfctr %r3
+    std %r3, OFF_REG(REG_CTR)(%r31)
+
+    // Save Iar/Msr
+    mfsrr0 %r3
+    std %r3, OFF_REG(REG_SRR0)(%r31)
+    mfsrr1 %r3
+    std %r3, OFF_REG(REG_SRR1)(%r31)
+
+    b ex_data_storage
+
 DO_EXCEPT(0x00000380, ex_data_segment);
 DO_EXCEPT(0x00000400, ex_instruction_storage);
 DO_EXCEPT(0x00000480, ex_instruction_segment);
@@ -295,74 +324,10 @@ ex_machine_check:
 
 ex_data_storage:
 
-#if DEBUG
-	mflr %r2
-	li %r3, 'D'
-	bl putc
-	li %r3, ' '
-	bl putc
-	mtlr %r2
-	li %r3, 's'
-	bl putc
-	li %r3, 'r'
-	bl putc
-	li %r3, 'r'
-	bl putc
-	li %r3, '0'
-	bl putc
-	li %r3, '='
-	bl putc
-	mfsrr0 %r3
-	bl puthex
-	li %r3, ' '
-	bl putc
-	li %r3, 'D'
-	bl putc
-	li %r3, 'A'
-	bl putc
-	li %r3, 'R'
-	bl putc
-	li %r3, '='
-	bl putc
-	bl putc
-	mfdar %r3 // get faulting address
-	bl puthex
-	li %r3, ' '
-	bl putc
-	li %r3, 'D'
-	bl putc
-	li %r3, 'S'
-	bl putc
-	li %r3, 'I'
-	bl putc
-	li %r3, 'S'
-	bl putc
-	li %r3, 'R'
-	bl putc
-	li %r3, '='
-	bl putc
-	mfspr %r3, 18 // dsisr
-	bl puthex
-	li %r3, ' '
-	bl putc
-	li %r3, 'H'
-	bl putc
-	li %r3, 'i'
-	bl putc
-	li %r3, 'n'
-	bl putc
-	li %r3, 't'
-	bl putc
-	li %r3, '='
-	bl putc
-#endif
-
-#if DEBUG
-	mfspr %r3, PpeTlbIndexHint
-	bl puthex
-	li %r3, ','
-	bl putc
-#endif
+        // Save 1,7-12,14,16-30
+        .irp reg, 1,7,8,9,10,11,12,14,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
+        std %r\reg, OFF_REG(\reg)(%r31)
+        .endr
 
 	mfdar %r3 // get faulting address
         rldicl %r4, %r3, 36, 60 // extract high nibble (right aligned)
@@ -372,8 +337,40 @@ ex_data_storage:
 	lwz %r4, pagetable@l(%r4) /* load physical addr & attribs */
 
 	cmpldi %r4, 0
-	beq page_fault
+	bne 1f
 
+        // Invalid page, segfault here
+        mfdsisr %r4
+        rldicl %r4, %r4, 39, 63 // Put write into r4
+
+        // Setup the MSR
+        lis %r5, 0x1000
+        sldi %r5, %r5, 32 // Hypervisor Mode
+        ori %r5, %r5, 0x3030 // Data/Instruction relocate/Machine Check/FPU
+        oris %r5, %r5, 0x200 // VPU
+        mtsrr1 %r5
+
+        // Put handler in Iar
+        lis %r5, segfault_handler@h
+        ori %r5, %r5, segfault_handler@l
+        mtsrr0 %r5
+
+        // Put return in Lr
+        lis %r5, common_interrupt_return@h
+        ori %r5, %r5, common_interrupt_handler@l
+        mtlr %r5
+
+        // Point r5 to the context
+        addis %r5, %r31, 0x8000
+
+        // Push the context stack up by 0x200 bytes
+        addi %r31, %r31, 0x200
+        mtsprg1 %r31
+
+        // Handle it!
+        rfid
+
+1:
 	cmpwi %r4, -1
 	beq user_page_handler
 
@@ -392,32 +389,7 @@ ex_data_storage:
 	rldimi  %r4, %r2, 63-26, 16 //  put into bits 16..26
 
 	mr %r15, %r4  /* page number */
-#if DEBUG
-	mr %r16, %r3
 
-	li %r3, 'r'
-	bl putc
-	li %r3, '='
-	bl putc
-	mr %r3, %r16
-1:
-	bl puthex
-	li %r3, ' '
-	bl putc
-
-	mr %r3, %r2
-	bl puthex
-	li %r3, ' '
-	bl putc
-
-	mr %r3, %r15
-	bl puthex
-	li %r3, ' '
-	bl putc
-	mr %r3, %r16
-#endif
-
-// 00001120_00000898
 	mtspr PpeTlbIndex, %r15
 
 		/* ARPN */
@@ -426,14 +398,6 @@ ex_data_storage:
 	or %r2, %r2, %r6 /* OR in page attributes */
 
 	mfdar %r15
-///	mr %r15, %r3
-
-#if DEBUG
-	mr %r3, %r2
-	bl puthex
-	li %r3, ' '
-	bl putc
-#endif
 
 	mtspr PpeTlbRpn, %r2
 
@@ -442,18 +406,29 @@ ex_data_storage:
 	rldicr %r2, %r15, 60 - PAGE_BITS, 56 // AVPN
 	rldicl %r2, %r2, 0, 20 // whatever
 	ori %r2, %r2, 5 // set V|L  (valid, large)
-#if DEBUG
-	mr %r3, %r2
-	bl puthex
-	li %r3, '\n'
-	bl putc
-#endif
-
-// 00000000_00004481
 
 	mtspr PpeTlbVpn, %r2
+
+        // Restore Cr, Xer, Lr, and Ctr
+        ld %r3, OFF_REG(REG_CR)(%r31)
+        mtcr %r3
+        ld %r3, OFF_REG(REG_XER)(%r31)
+        mtxer %r3
+        ld %r3, OFF_REG(REG_LR)(%r31)
+        mtlr %r3
+        ld %r3, OFF_REG(REG_CTR)(%r31)
+        mtctr %r3
 	
-	b except_return
+	// Restore 2-6, 13, 15
+        .irp reg, 2,3,4,5,6,13,15
+        ld %r\reg, OFF_REG(\reg)(%r31)
+        .endr
+
+        // Restore r31
+        mfsprg0 %r31
+
+        // Return
+        rfid
 
 ex_data_segment:
 	b dump
@@ -509,9 +484,32 @@ ex_instruction_storage:
 	lwz %r4, pagetable@l(%r4)
 
 	cmpldi %r4, 0
-	beq page_fault
+	bne 1f
 
-	
+        // Invalid page, segfault here
+        li %r4, 0 // Put write into r4
+
+        // Setup the MSR
+        lis %r5, 0x1000
+        sldi %r5, %r5, 32 // Hypervisor Mode
+        ori %r5, %r5, 0x3030 // Data/Instruction relocate/Machine Check/FPU
+        oris %r5, %r5, 0x200 // VPU
+        mtsrr1 %r5
+
+        // Put handler in Iar
+        lis %r5, segfault_handler@h
+        ori %r5, %r5, segfault_handler@l
+        mtsrr0 %r5
+
+        // Put return in Lr
+        lis %r5, common_interrupt_return@h
+        ori %r5, %r5, common_interrupt_handler@l
+        mtlr %r5
+
+        // Handle it!
+        rfid
+
+1:
 
 	rldicl %r3, %r3, 0, 36 // extract rest of addr
 	rldicr %r5, %r4, 10, 40
@@ -636,15 +634,68 @@ user_page_handler:
 
 		/* no mapping -> segfault */
 	cmplwi %r4,0
-	beq user_segfault_handler
+	bne 1f
 
+        // Invalid page, segfault here
+        mr %r4, %r6 // Put write into r4
+
+        // Setup the MSR
+        lis %r5, 0x1000
+        sldi %r5, %r5, 32 // Hypervisor Mode
+        ori %r5, %r5, 0x3030 // Data/Instruction relocate/Machine Check/FPU
+        oris %r5, %r5, 0x200 // VPU
+        mtsrr1 %r5
+
+        // Put handler in Iar
+        lis %r5, segfault_handler@h
+        ori %r5, %r5, segfault_handler@l
+        mtsrr0 %r5
+
+        // Put return in Lr
+        lis %r5, common_interrupt_return@h
+        ori %r5, %r5, common_interrupt_handler@l
+        mtlr %r5
+
+        // Point r5 to the context
+        addis %r5, %r31, 0x8000
+
+        // Push the context stack up by 0x200 bytes
+        addi %r31, %r31, 0x200
+        mtsprg1 %r31
+
+        // Handle it!
+        rfid
+
+1:
 		/* if write in read only page, segfault too */
 	rldicl %r5,%r4,0,62
 	cmplwi %r5,3
 	bne 1f
 	cmplwi %r6,1
 	bne 1f
-	b user_segfault_handler
+	
+        // Invalid page, segfault here
+        li %r4, 1 // Put write into r4
+
+        // Put handler in Iar
+        lis %r5, segfault_handler@h
+        ori %r5, %r5, segfault_handler@l
+        mtsrr0 %r5
+
+        // Put return in Lr
+        lis %r5, common_interrupt_return@h
+        ori %r5, %r5, common_interrupt_handler@l
+        mtlr %r5
+
+        // Point r5 to the context
+        addis %r5, %r31, 0x8000
+
+        // Push the context stack up by 0x200 bytes
+        addi %r31, %r31, 0x200
+        mtsprg1 %r31
+
+        // Handle it!
+        rfid
 1:
 
 	rldicr %r5, %r4, 0, 50  
@@ -669,7 +720,26 @@ user_page_handler:
 	ori %r2, %r2, 5 // set V|L  (valid, large)
 	mtspr PpeTlbVpn, %r2
 
-	b except_return
+        // Restore Cr, Xer, Lr, and Ctr
+        ld %r3, OFF_REG(REG_CR)(%r31)
+        mtcr %r3
+        ld %r3, OFF_REG(REG_XER)(%r31)
+        mtxer %r3
+        ld %r3, OFF_REG(REG_LR)(%r31)
+        mtlr %r3
+        ld %r3, OFF_REG(REG_CTR)(%r31)
+        mtctr %r3
+	
+	// Restore 2-6, 13, 15
+        .irp reg, 2,3,4,5,6,13,15
+        ld %r\reg, OFF_REG(\reg)(%r31)
+        .endr
+
+        // Restore r31
+        mfsprg0 %r31
+
+        // Return
+        rfid
 
 user_segfault_handler:
 	lis %r9,vm_segfault_handler@ha - 0x80000000
@@ -739,6 +809,7 @@ sfh64:
 	mtsrr1 %r3
 	ld %r3, OFF_REG(31)(%r31)
 	mtsprg0 %r3
+        b except_return
 
 except_savevars:
         std %r0, OFF_REG(0)(%r31)
@@ -779,11 +850,13 @@ except_savevars:
         std %r4, OFF_REG(REG_CTR)(%r31)
         mfxer %r4
         std %r4, OFF_REG(REG_XER)(%r31)
+        mfsrr0 %r4
+        std %r4, OFF_REG(REG_SRR0)(%r31)
+        mfsrr1 %r4
+        std %r4, OFF_REG(REG_SRR1)(%r31)
         blr
 	
 except_return:
-
-	mfsprg1 %r31
 	ld %r0, OFF_REG(0)(%r31)
 	ld %r5, OFF_REG(5)(%r31)
 	ld %r6, OFF_REG(6)(%r31)

@@ -385,8 +385,10 @@ void _exit(int status)
 {
 	char s[256];
 	int i,stuck=0;
+        
+        //threading_shutdown();
 	
-	sprintf(s,"[Exit] with code %d\n", status);
+	sprintf(s,"\n[Exit] with code %d\n", status);
 	vfs_console_write(NULL,s,strlen(s));
 
 	for(i=0;i<6;++i)

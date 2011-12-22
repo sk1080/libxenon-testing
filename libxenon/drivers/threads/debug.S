@@ -1,4 +1,4 @@
-#include <debug/debug_defines.h>
+#include <threads/debug_defines.h>
 
 .globl debug_print
 debug_print:

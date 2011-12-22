@@ -5,8 +5,8 @@
 #include <xenon_smc/xenon_smc.h>
 #include <ppc/register.h>
 #include <threads/threads.h>
-#include <debug/debug.h>
-#include <debug/gdb.h>
+#include <threads/debug.h>
+#include <threads/gdb.h>
 
 // Does exception stuff
 int gdb_debug_routine(unsigned int code, PROCESSOR_DATA_BLOCK *processor)

@@ -17,9 +17,9 @@ typedef struct _PROCESSOR_FPU_VPU_SAVE
 {
     double Fpr[32]; // Floating save
     double Fpscr; // Floating status save
-    float VrSave[128][4]; // Vector save (UNUSED)
-    float VscrSave[4]; // Vector status save (UNUSED)
-} PROCESSOR_FPU_VPU_SAVE;
+    // float VrSave[128][4]; // Vector save (UNUSED)
+    // float VscrSave[4]; // Vector status save (UNUSED)
+} PROCESSOR_FPU_VPU_SAVE; // 0x108
 
 // Thread context
 typedef struct _CONTEXT
@@ -36,7 +36,7 @@ typedef struct _CONTEXT
     unsigned long long Xer;   // Fixed Point Exception
     
     PROCESSOR_FPU_VPU_SAVE FpuVpu; // Floating/Vector save
-} CONTEXT, *PCONTEXT;
+} CONTEXT, *PCONTEXT; // 0x238
 
 // The structure that lives on register 13
 typedef struct _PROCESSOR_DATA_BLOCK
@@ -50,17 +50,22 @@ typedef struct _PROCESSOR_DATA_BLOCK
     unsigned long long IARSave;      // Also SRR0 (0x120)
     unsigned long long MSRSave;      // Also SRR1 (0x128)
     PROCESSOR_FPU_VPU_SAVE *FPUVPUSave; // Saves the other regs (0x130)
-    unsigned int Reserved3;
-    unsigned long long Reserved0; // Reserved
+    unsigned int DAR;
+    unsigned long long Reserved1; // Data Address for segfaults
     
     unsigned char CurrentProcessor;  // What processor are we? (offset 0x140)
     unsigned char Irq;               // Interrupt request level (offset 0x141)
-    unsigned char Reserved1[2];         // Reserved
+    unsigned char Reserved2[2];         // Reserved
     
     // Thread List
     struct _THREAD *FirstThread;
     struct _THREAD *LastThread;
-    struct _THREAD *ListPtr;
+    //struct _THREAD *ListPtr;
+    
+    // Thread switch process queue
+    struct _THREAD *FirstSwapProcess;
+    struct _THREAD *LastSwapProcess;
+    unsigned int SwapProcessLock;
     
     thread_interrupt_proc InterruptTable[0x20]; // Interrupt function pointers
     
@@ -77,54 +82,64 @@ typedef struct _PROCESSOR_DATA_BLOCK
     // Locks
     unsigned int Lock; // To synchronize access
     
+    // Recursion
+    volatile unsigned int ExceptionRecursion; // To synchronize access to the interrupts
+    
 } PROCESSOR_DATA_BLOCK;
 
 // The thread structure
 typedef struct _THREAD
 {
     // Thread Context
-    CONTEXT Context;
+    CONTEXT Context; // 0
     
     // Assigned Processor
-    PROCESSOR_DATA_BLOCK *ThisProcessor;
+    PROCESSOR_DATA_BLOCK *ThisProcessor; // 0x238
     
     // Thread List
-    struct _THREAD *NextThread;
-    struct _THREAD *PreviousThread;
+    struct _THREAD *NextThread; // 0x23C
+    struct _THREAD *PreviousThread; // 0x240
     
     // List of all threads
-    struct _THREAD *NextThreadFull;
-    struct _THREAD *PreviousThreadFull;
+    struct _THREAD *NextThreadFull; // 0x244
+    struct _THREAD *PreviousThreadFull; // 0x248
+    
+    // Ready list
+    struct _THREAD *PreviousThreadReady; // 0x24C
+    struct _THREAD *NextThreadReady; // 0x250
     
     // If the object is valid
-    unsigned char Valid;
+    unsigned char Valid; // 0x254
     // Priority
-    unsigned char Priority;
+    unsigned char Priority; // 0x255
     // Priority boost
-    unsigned char PriorityBoost;
+    unsigned char PriorityBoost; // 0x256
     // Maximum Priority Boost
-    unsigned char MaxPriorityBoost;
+    unsigned char MaxPriorityBoost; // 0x257
     // If we are currently running this thread
-    unsigned char ThreadIsRunning;
+    unsigned char ThreadIsRunning; // 0x258
     // Our suspend count
-    unsigned char SuspendCount; // A count of zero means we can't be resumed anymore (running)
+    unsigned char SuspendCount; // A count of zero means we can't be resumed anymore (running) // 0x259
     // If the handle is still open
-    unsigned char HandleOpen; // You have to close this before we dealloc the thread object!!
+    unsigned char HandleOpen; // You have to close this before we dealloc the thread object!! // 0x25A
     // The thread ID (its unique, i promise)
-    unsigned char ThreadId;
+    unsigned char ThreadId; // 0x25B
+    // If we should kill this thread off in the scheduler
+    unsigned char ThreadTerminated; // 0x25C
+    unsigned char Reserved[3]; // 0x25D
     
-    void *DebugData; // Just a pointer so you can stick whatever you want on the object
+    void *DebugData; // Just a pointer so you can stick whatever you want on the object // 0x260
     
     // To wake a thread up from sleep,
                 // just set SleepTime to zero, scheduler will handle the rest
-    long long SleepTime; // How long until we wake up (milliseconds * 2500)
+    long long SleepTime; // How long until we wake up (milliseconds * 2500) // 0x264
     
     // TODO: Have a list of objects that if signaled, will wake us up
     
-    char * StackBase; // The bottom of our stack
-    unsigned int StackSize; // The size of our stack
+    char * StackBase; // The bottom of our stack // 0x26C
+    unsigned int StackSize; // The size of our stack // 0x270
     
-} THREAD, *PTHREAD;
+} THREAD, *PTHREAD; // 0x274
 
 // A list of threads
 typedef struct _THREAD_LIST
@@ -154,6 +169,10 @@ PTHREAD thread_create(void* entrypoint, unsigned int stack_size,
 // DO NOT TOUCH THE HANDLE AGAIN
 void thread_close(PTHREAD pthr);
 
+// Returns the pointer to the current thread, feel free to use on the thread you fetch,
+// As you are running, thus your pointer is valid
+PTHREAD thread_get_current();
+
 // Swap the thread's processor
 void thread_set_processor(PTHREAD pthr, unsigned int processor);
 
@@ -165,6 +184,8 @@ int thread_resume(PTHREAD pthr);
 
 // Set thread priority (0-15), 7 is default, 0 is idle thread
 void thread_set_priority(PTHREAD pthr, unsigned int priority);
+// Set the priority boost, 5 is default
+void thread_set_priority_boost(PTHREAD pthr, unsigned int boost);
 
 // Set the quantum for the scheduling engine, default quantum is 20ms
 void process_set_quantum_length(unsigned int milliseconds);
@@ -195,10 +216,8 @@ unsigned int thread_disable_interrupts();
 void thread_enable_interrupts(unsigned int msr);
 
 // Flush context
-void save_floating_point(PROCESSOR_FPU_VPU_SAVE* ptr);
-void restore_floating_point(PROCESSOR_FPU_VPU_SAVE* ptr);
-void save_vector(PROCESSOR_FPU_VPU_SAVE* ptr);
-void restore_vector(PROCESSOR_FPU_VPU_SAVE* ptr);
+void dump_thread_context(CONTEXT *context);
+void restore_thread_context(CONTEXT *context);
 
 #ifdef	__cplusplus
 }
