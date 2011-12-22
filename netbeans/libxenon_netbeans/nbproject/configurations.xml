@@ -37,14 +37,6 @@
           <in>telnet_console.c</in>
           <in>telnet_console.h</in>
         </df>
-        <df name="debug">
-          <in>c_debug.c</in>
-          <in>debug.S</in>
-          <in>debug.h</in>
-          <in>debug_defines.h</in>
-          <in>gdb.c</in>
-          <in>gdb.h</in>
-        </df>
         <df name="diskio">
           <in>ata.c</in>
           <in>ata.h</in>
@@ -293,7 +285,15 @@
           <in>xenonsprs.h</in>
         </df>
         <df name="threads">
+          <in>c_debug.c</in>
           <in>c_threads.c</in>
+          <in>debug.S</in>
+          <in>debug.h</in>
+          <in>debug_defines.h</in>
+          <in>gdb.c</in>
+          <in>gdb.h</in>
+          <in>mutex.c</in>
+          <in>mutex.h</in>
           <in>threads.S</in>
           <in>threads.h</in>
         </df>

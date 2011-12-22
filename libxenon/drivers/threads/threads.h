@@ -4,9 +4,14 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
-    
+
+// Defines
 #define MAX_THREAD_COUNT 256
+#define THREAD_FLAG_CREATE_SUSPENDED 1 // Creates the thread with 1 suspend
+
+#define INFINITE -1
     
+// Typedefs
 typedef void (*thread_interrupt_proc)(unsigned int);
 typedef unsigned int (*thread_ipi_proc)(unsigned int);
 typedef int (*thread_proc)(void*);
@@ -105,39 +110,46 @@ typedef struct _THREAD
     struct _THREAD *PreviousThreadFull; // 0x248
     
     // Ready list
-    struct _THREAD *PreviousThreadReady; // 0x24C
-    struct _THREAD *NextThreadReady; // 0x250
+    struct _THREAD *NextThreadReady; // 0x24C
+    struct _THREAD *PreviousThreadReady; // 0x250
+    
+    // Mutex Waiting List
+    struct _THREAD *NextThreadMutex; // 0x254
+    struct _THREAD *PreviousThreadMutex; // 0x258
     
     // If the object is valid
-    unsigned char Valid; // 0x254
+    unsigned char Valid; // 0x25C
     // Priority
-    unsigned char Priority; // 0x255
+    unsigned char Priority; // 0x25D
     // Priority boost
-    unsigned char PriorityBoost; // 0x256
+    unsigned char PriorityBoost; // 0x25E
     // Maximum Priority Boost
-    unsigned char MaxPriorityBoost; // 0x257
+    unsigned char MaxPriorityBoost; // 0x25F
     // If we are currently running this thread
-    unsigned char ThreadIsRunning; // 0x258
+    unsigned char ThreadIsRunning; // 0x260
     // Our suspend count
-    unsigned char SuspendCount; // A count of zero means we can't be resumed anymore (running) // 0x259
+    unsigned char SuspendCount; // A count of zero means we can't be resumed anymore (running) // 0x261
     // If the handle is still open
-    unsigned char HandleOpen; // You have to close this before we dealloc the thread object!! // 0x25A
+    unsigned char HandleOpen; // You have to close this before we dealloc the thread object!! // 0x262
     // The thread ID (its unique, i promise)
-    unsigned char ThreadId; // 0x25B
+    unsigned char ThreadId; // 0x263
     // If we should kill this thread off in the scheduler
-    unsigned char ThreadTerminated; // 0x25C
-    unsigned char Reserved[3]; // 0x25D
+    unsigned char ThreadTerminated; // 0x264
+    // If we are waiting for a mutex
+    // This is also used to signal if the mutex was acquired, if it is 1 when you wake up, it is not acquired
+    unsigned char WaitingForMutex; // 0x265
+    unsigned char Reserved[2]; // 0x266
     
-    void *DebugData; // Just a pointer so you can stick whatever you want on the object // 0x260
+    void *DebugData; // Just a pointer so you can stick whatever you want on the object // 0x268
     
     // To wake a thread up from sleep,
                 // just set SleepTime to zero, scheduler will handle the rest
-    long long SleepTime; // How long until we wake up (milliseconds * 2500) // 0x264
+    long long SleepTime; // How long until we wake up (milliseconds * 2500) // 0x26C
     
     // TODO: Have a list of objects that if signaled, will wake us up
     
-    char * StackBase; // The bottom of our stack // 0x26C
-    unsigned int StackSize; // The size of our stack // 0x270
+    char * StackBase; // The bottom of our stack // 0x270
+    unsigned int StackSize; // The size of our stack // 0x274
     
 } THREAD, *PTHREAD; // 0x274
 
@@ -158,8 +170,6 @@ void threading_init();
 void threading_shutdown();
 
 // Thread management
-
-#define THREAD_FLAG_CREATE_SUSPENDED 1 // Creates the thread with 1 suspend
 
 // Returns thread pointer
 PTHREAD thread_create(void* entrypoint, unsigned int stack_size,
@@ -218,6 +228,11 @@ void thread_enable_interrupts(unsigned int msr);
 // Flush context
 void dump_thread_context(CONTEXT *context);
 void restore_thread_context(CONTEXT *context);
+
+extern unsigned int ThreadListLock;
+extern unsigned long long _system_time; // System Timer (Used for telling time)
+extern unsigned long long _clock_time; // Clock Timer (Used for timing stuff)
+extern unsigned long long _millisecond_clock_time; // Millisecond Clock Timer
 
 #ifdef	__cplusplus
 }

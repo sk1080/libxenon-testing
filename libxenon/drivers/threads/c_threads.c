@@ -12,6 +12,7 @@
 #include <ppc/atomic.h>
 #include <string.h>
 #include <stdlib.h>
+#include <threads/mutex.h>
 
 char processor_blocks[0x1000 * 6] = {0}; // Per-Processor Core Data Block
 char processor_fpu_vpu_blocks[sizeof(PROCESSOR_FPU_VPU_SAVE) * 6] = {0};
@@ -28,7 +29,7 @@ THREAD ThreadPool[MAX_THREAD_COUNT]; // The thread pool
 
 // Lock this if you ever have to lock more than one processor at once
 // AND LOCK IT FIRST
-static unsigned int ThreadListLock = 0; // Lock for the thread list
+unsigned int ThreadListLock = 0; // Lock for the thread list
 
 // 20ms = 50000
 static unsigned int decrementer_ticks = 50000; // Default decrementer value
