@@ -12,6 +12,9 @@
 
 #include "elf_abi.h"
 
+#define INITRD_START ((void*)0x85FE0000)
+#define INITRD_MAX_SIZE 0x2000000
+
 #define ELF_DEVTREE_START ((void*)0x87FE0000)
 #define ELF_DEVTREE_MAX_SIZE 0x10000
 #define MAX_CMDLINE_SIZE 255
@@ -325,11 +328,20 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
 
 void kernel_set_initrd(void *start, size_t size)
 {       
-    printf("Initrd at %p/0x%lx: %ld bytes (%ldKiB)\n", start, \
-    (u32)PHYSADDR((uint64_t)start), size, size/1024);
+		if (size > INITRD_MAX_SIZE){
+			printf(" ! Initrd bigger than 32 MB, Aborting!\n");
+			return;
+		}
+			
+        printf(" * Relocating initrd...\n");
+        memset(INITRD_START,0,INITRD_MAX_SIZE);
+        memcpy(INITRD_START,start,size);
         
-	initrd_start = start;
-	initrd_size = size;
+        initrd_start = INITRD_START;
+        initrd_size = size;
+        
+        printf("Initrd at %p/0x%lx: %ld bytes (%ldKiB)\n", initrd_start, \
+        (u32)PHYSADDR((uint64_t)initrd_start), initrd_size, initrd_size/1024);
 }
 
 void kernel_build_cmdline(const char *parameters, const char *root)
