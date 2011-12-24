@@ -344,6 +344,14 @@ void kernel_set_initrd(void *start, size_t size)
         (u32)PHYSADDR((uint64_t)initrd_start), initrd_size, initrd_size/1024);
 }
 
+void kernel_reset_initrd(void)
+{
+    memset(INITRD_START,0,INITRD_MAX_SIZE);
+    
+    initrd_start = NULL;
+    initrd_size = 0;
+}
+
 void kernel_build_cmdline(const char *parameters, const char *root)
 {
 	bootargs[0] = 0;
