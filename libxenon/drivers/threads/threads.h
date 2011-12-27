@@ -11,12 +11,32 @@ extern "C" {
 
 #define INFINITE -1
     
+#define DPC_PRIORITY_HIGH 2
+#define DPC_PRIORITY_MEDIUM 1
+#define DPC_PRIORITY_LOW 0
+    
 // Typedefs
 typedef void (*thread_interrupt_proc)(unsigned int);
 typedef unsigned int (*thread_ipi_proc)(unsigned int);
 typedef int (*thread_proc)(void*);
+typedef void (*dpc_proc)(void*, void*, void*);
 
 #pragma pack(push, 1)
+
+// Deferred procedure call structure
+typedef struct _DPC
+{
+    // What function to call
+    dpc_proc Procedure;
+    // The parameters to use
+    void *Param1, *Param2, *Param3;
+    // The priority of the call
+    unsigned int Priority;
+    // The next DPC in the list
+    struct _DPC *NextDPC;
+    // If we are currently queued
+    unsigned int Queued;
+} DPC;
 
 typedef struct _PROCESSOR_FPU_VPU_SAVE
 {
@@ -90,6 +110,11 @@ typedef struct _PROCESSOR_DATA_BLOCK
     // Recursion
     volatile unsigned int ExceptionRecursion; // To synchronize access to the interrupts
     
+    // DPC
+    unsigned int DPCLock; // To synchronize access to the DPC List
+    struct _DPC *DPCList; // To store the DPC List
+    unsigned int ProcessingDPC; // If we are currently processing the DPC List
+    
 } PROCESSOR_DATA_BLOCK;
 
 // The thread structure
@@ -148,10 +173,10 @@ typedef struct _THREAD
     
     // TODO: Have a list of objects that if signaled, will wake us up
     
-    char * StackBase; // The bottom of our stack // 0x270
-    unsigned int StackSize; // The size of our stack // 0x274
+    char * StackBase; // The bottom of our stack // 0x274
+    unsigned int StackSize; // The size of our stack // 0x278
     
-} THREAD, *PTHREAD; // 0x274
+} THREAD, *PTHREAD; // 0x27C
 
 // A list of threads
 typedef struct _THREAD_LIST
@@ -228,6 +253,12 @@ void thread_enable_interrupts(unsigned int msr);
 // Flush context
 void dump_thread_context(CONTEXT *context);
 void restore_thread_context(CONTEXT *context);
+
+// DPC
+// Initialize a DPC
+void dpc_initialize(DPC *dpc, dpc_proc procedure, unsigned int priority);
+// Queue a DPC to be called
+unsigned int dpc_queue(DPC *dpc, void *param1, void *param2, void *param3);
 
 extern unsigned int ThreadListLock;
 extern unsigned long long _system_time; // System Timer (Used for telling time)

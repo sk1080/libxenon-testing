@@ -91,7 +91,36 @@ DO_EXCEPT(0x00000200, ex_machine_check);
     b ex_data_storage
 
 DO_EXCEPT(0x00000380, ex_data_segment);
-DO_EXCEPT(0x00000400, ex_instruction_storage);
+//DO_EXCEPT(0x00000400, ex_instruction_storage);
+. = exc_base + 0x400
+    mtsprg0 %r31
+    mfsprg1 %r31
+
+    // Save 2-6, 13, 15
+    .irp reg, 2,3,4,5,6,13,15
+    std %r\reg, OFF_REG(\reg)(%r31)
+    .endr
+    mfsprg0 %r3
+    std %r3, OFF_REG(31)(%r31)
+
+    // Save Cr, Xer, Lr, and Ctr
+    mfcr %r3
+    std %r3, OFF_REG(REG_CR)(%r31)
+    mfxer %r3
+    std %r3, OFF_REG(REG_XER)(%r31)
+    mflr %r3
+    std %r3, OFF_REG(REG_LR)(%r31)
+    mfctr %r3
+    std %r3, OFF_REG(REG_CTR)(%r31)
+
+    // Save Iar/Msr
+    mfsrr0 %r3
+    std %r3, OFF_REG(REG_SRR0)(%r31)
+    mfsrr1 %r3
+    std %r3, OFF_REG(REG_SRR1)(%r31)
+
+    b ex_instruction_storage
+
 DO_EXCEPT(0x00000480, ex_instruction_segment);
 
 //DO_EXCEPT(0x00000500, ex_external);
@@ -435,45 +464,10 @@ ex_data_segment:
 
 ex_instruction_storage:
 
-#if DEBUG
-	mflr %r2
-	li %r3, 'I'
-	bl putc
-	li %r3, ' '
-	bl putc
-	mtlr %r2
-	li %r3, 's'
-	bl putc
-	li %r3, 'r'
-	bl putc
-	li %r3, 'r'
-	bl putc
-	li %r3, '0'
-	bl putc
-	li %r3, '='
-	bl putc
-	mfsrr0 %r3
-	bl puthex
-	li %r3, ' '
-	bl putc
-	li %r3, 'H'
-	bl putc
-	li %r3, 'i'
-	bl putc
-	li %r3, 'n'
-	bl putc
-	li %r3, 't'
-	bl putc
-	li %r3, '='
-	bl putc
-#endif
-
-#if DEBUG
-	mfspr %r3, PpeTlbIndexHint
-	bl puthex
-	li %r3, ','
-	bl putc
-#endif
+        // Save 1,7-12,14,16-30
+        .irp reg, 1,7,8,9,10,11,12,14,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
+        std %r\reg, OFF_REG(\reg)(%r31)
+        .endr
 
 	mfsrr0 %r3 // get faulting address
 
@@ -484,8 +478,10 @@ ex_instruction_storage:
 	lwz %r4, pagetable@l(%r4)
 
 	cmpldi %r4, 0
-	bne 1f
-
+	beq 1f
+        cmpwi %r4, -1
+        bne 2f
+1:
         // Invalid page, segfault here
         li %r4, 0 // Put write into r4
 
@@ -506,11 +502,17 @@ ex_instruction_storage:
         ori %r5, %r5, common_interrupt_handler@l
         mtlr %r5
 
+        // Point r5 to the context
+        addis %r5, %r31, 0x8000
+
+        // Push the context stack up by 0x200 bytes
+        addi %r31, %r31, 0x200
+        mtsprg1 %r31
+
         // Handle it!
         rfid
 
-1:
-
+2:
 	rldicl %r3, %r3, 0, 36 // extract rest of addr
 	rldicr %r5, %r4, 10, 40
 	rldicl %r6, %r4, 0, 50
@@ -525,32 +527,7 @@ ex_instruction_storage:
 	rldimi  %r4, %r2, 63-26, 16 //  put into bits 16..26
 
 	mr %r15, %r4
-#if DEBUG
-	mr %r16, %r3
 
-	li %r3, 'r'
-	bl putc
-	li %r3, '='
-	bl putc
-	mr %r3, %r16
-1:
-	bl puthex
-	li %r3, ' '
-	bl putc
-
-	mr %r3, %r2
-	bl puthex
-	li %r3, ' '
-	bl putc
-
-	mr %r3, %r15
-	bl puthex
-	li %r3, ' '
-	bl putc
-	mr %r3, %r16
-#endif
-
-// 00001120_00000898
 	mtspr PpeTlbIndex, %r15
 
 		/* ARPN */
@@ -559,31 +536,35 @@ ex_instruction_storage:
 	or %r2, %r2, %r6
 
 	mfsrr0 %r15
-///	mr %r15, %r3
-
-#if DEBUG
-	mr %r3, %r2
-	bl puthex
-	li %r3, ' '
-	bl putc
-#endif
 
 	mtspr PpeTlbRpn, %r2
 
 	rldicr %r2, %r15, 60 - PAGE_BITS, 56 // AVPN
 	rldicl %r2, %r2, 0, 20 // whatever
 	ori %r2, %r2, 5 // set valid
-#if DEBUG
-	mr %r3, %r2
-	bl puthex
-	li %r3, '\n'
-	bl putc
-#endif
-
-// 00000000_00004481
 
 	mtspr PpeTlbVpn, %r2
-	b except_return
+
+        // Restore Cr, Xer, Lr, and Ctr
+        ld %r3, OFF_REG(REG_CR)(%r31)
+        mtcr %r3
+        ld %r3, OFF_REG(REG_XER)(%r31)
+        mtxer %r3
+        ld %r3, OFF_REG(REG_LR)(%r31)
+        mtlr %r3
+        ld %r3, OFF_REG(REG_CTR)(%r31)
+        mtctr %r3
+	
+	// Restore 2-6, 13, 15
+        .irp reg, 2,3,4,5,6,13,15
+        ld %r\reg, OFF_REG(\reg)(%r31)
+        .endr
+
+        // Restore r31
+        mfsprg0 %r31
+
+        // Return
+        rfid
 
 ex_instruction_segment:
 	b dump

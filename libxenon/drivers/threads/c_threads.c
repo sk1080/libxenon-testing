@@ -95,26 +95,30 @@ static void thread_interrupt_ipi(unsigned int soc_interrupt)
     unlock(&processor->IpiLock);
 }
 
+void hal_dpc_for_smc_request(void *Param1, void *Param2, void *Param3)
+{
+}
+
+DPC hal_smc_request_dpc =
+{
+    hal_dpc_for_smc_request,
+    NULL, NULL, NULL,
+    DPC_PRIORITY_HIGH,
+    NULL,
+    0
+};
+
 static void thread_interrupt_hal_smm(unsigned int soc_interrupt)
 {
-    //save_floating_point();
-    //printf("SMC\n");
-    //restore_floating_point();
-    //printf("SMC\n");
-    // TODO: THIS
-    // We need DPCs so we can queue a dpc to handle the smc stuff
-    /*
     unsigned int hal_offset = 0xEA000000;
     
     // Fetch
     unsigned int message = __builtin_bswap32(lwz(hal_offset + 0x1050));
     
-    // Output
-    printf("Hal Message: %08X\n", message);
+    // Check and queue
     
     // Acknowledge
     stw(hal_offset + 0x1058, __builtin_bswap32(message));
-     */
 }
 
 static void thread_interrupt_spurious(unsigned int soc_interrupt)
@@ -377,6 +381,57 @@ PTHREAD thread_schedule_core()
     return winThread;
 }
 
+// Processes the dpc list for the current processor
+void thread_process_dpc()
+{
+    PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
+    
+    lock(&processor->DPCLock);
+    processor->ProcessingDPC = 1;
+    
+    if(processor->DPCList)
+    {
+        // Raise the irql to DPC level
+        unsigned int irql = thread_raise_irql(2);
+    
+        // As our irql is 2, even though interrupts are enabled
+        // We can't be rescheduled while processing this
+        // However, external interrupts can and WILL interrupt us if they are asserted
+        // Like the SMC going ( >o< Hey, Listen! )
+    
+        // Walk the DPC list
+        DPC *dpc;
+        while(processor->DPCList)
+        {
+            dpc = processor->DPCList;
+            processor->DPCList = processor->DPCList->NextDPC;
+            
+            // Restore interrupts
+            unsigned long long msr = mfmsr();
+            mtmsr(msr | 0x8000);
+            
+            // Call the dpc
+            dpc->Procedure(dpc->Param1, dpc->Param2, dpc->Param3);
+            
+            // Restore interrupts
+            mtmsr(msr);
+            
+            // Unqueue the DPC
+            dpc->NextDPC = NULL;
+            dpc->Param1 = NULL;
+            dpc->Param2 = NULL;
+            dpc->Param3 = NULL;
+            dpc->Queued = 0;
+        }
+    
+            // Restore the irql
+        thread_lower_irql(irql);
+    }
+    
+    processor->ProcessingDPC = 0;
+    unlock(&processor->DPCLock);
+}
+
 // Schedules for the current processes
 void thread_schedule(CONTEXT *context)
 {
@@ -408,6 +463,10 @@ void thread_schedule(CONTEXT *context)
     
     // Clear any outstanding reservations
     // thread_clear_lwarx();
+    
+    // Process any DPCs
+    if(processor->ProcessingDPC == 0)
+        thread_process_dpc();
 }
 
 void decrementer_interrupt_handler()
@@ -417,6 +476,10 @@ void decrementer_interrupt_handler()
     
     // Flush the context
     dump_thread_context(&context);
+    
+    // Process any DPCs
+    if(processor->Irq <= 2 && processor->ProcessingDPC == 0)
+        thread_process_dpc();
     
     // We will only reschedule if the irq is less than 2 (DPC)
     if(processor->Irq < 2)
@@ -1064,4 +1127,74 @@ void threading_init()
     printf("All threads online!\n");
     
     printf("Thread init complete!\n");
+}
+
+// Initialize a DPC
+void dpc_initialize(DPC *dpc, dpc_proc procedure, unsigned int priority)
+{
+    memset(dpc, 0, sizeof(DPC));
+    dpc->Priority = priority;
+    dpc->Procedure = procedure;
+}
+
+// Queue a DPC to be called
+unsigned int dpc_queue(DPC *dpc, void *param1, void *param2, void *param3)
+{
+    PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
+    
+    unsigned int rval = 0;
+    unsigned int irql = thread_spinlock(&ThreadListLock);
+    
+    // If we are processing a DPC while queueing, dont lock
+    if(processor->ProcessingDPC == 0)
+        lock(&processor->DPCLock);
+    
+    if(dpc->Queued == 0)
+    {
+        dpc->Param1 = param1;
+        dpc->Param2 = param2;
+        dpc->Param3 = param3;
+        
+        dpc->Queued = 1;
+        
+        rval = 1;
+        if(processor->DPCList)
+        {
+            if(processor->DPCList->Priority < dpc->Priority)
+            {
+                // Stick on the front of the queue
+                dpc->NextDPC = processor->DPCList;
+                processor->DPCList = dpc;
+            }
+            else
+            {
+                DPC *list = processor->DPCList;
+                for(;;)
+                {
+                    if(list->NextDPC == NULL)
+                    {
+                        list->NextDPC = dpc;
+                        break;
+                    }
+                    
+                    // Check priority of next on list
+                    if(list->NextDPC->Priority < dpc->Priority)
+                    {
+                        // Insert into list
+                        dpc->NextDPC = list->NextDPC;
+                        list->NextDPC = dpc;
+                        break;
+                    }
+                }
+            }
+        }
+        else
+            processor->DPCList = dpc;
+    }
+    
+    if(processor->ProcessingDPC == 0)
+        unlock(&processor->DPCLock);
+    thread_unlock(&ThreadListLock, irql);
+    
+    return rval;
 }
