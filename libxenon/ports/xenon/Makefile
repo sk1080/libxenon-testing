@@ -117,7 +117,13 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/lwip/xenon/netif/enet.o \
 	../../drivers/network/network.o\
 	../../drivers/elf/elf.o \
-	../../drivers/elf/elf_run.o
+	../../drivers/elf/elf_run.o \
+	../../drivers/threads/threads.o \
+	../../drivers/threads/c_threads.o \
+	../../drivers/threads/debug.o \
+	../../drivers/threads/c_debug.o \
+	../../drivers/threads/gdb.o \
+	../../drivers/threads/mutex.o
 
 
 # Build rules
