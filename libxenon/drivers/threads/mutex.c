@@ -53,10 +53,10 @@ unsigned int mutex_acquire(MUTEX *mutex, int timeout)
     
     lock(&mutex->Lock);
     
-    if(mutex->CurrentLockCount == 0)
+    if(mutex->CurrentLockCount < mutex->MaximumLockCount)
     {
         // We own this mutex
-        mutex->CurrentLockCount = 1;
+        mutex->CurrentLockCount++;
         acquired = 1;
     }
     else
@@ -85,7 +85,7 @@ unsigned int mutex_acquire(MUTEX *mutex, int timeout)
     
     // Lock
     lock(&mutex->Lock);
-    unsigned int irql = thread_spinlock(&ThreadListLock);
+    //unsigned int irql = thread_spinlock(&ThreadListLock);
     
     // Check the result
     if(thread_get_current()->WaitingForMutex)
@@ -94,8 +94,10 @@ unsigned int mutex_acquire(MUTEX *mutex, int timeout)
         
         // Remove ourself from the mutex list
         PTHREAD pthr = thread_get_current();
-        pthr->NextThreadMutex->PreviousThreadMutex = pthr->PreviousThreadMutex;
-        pthr->PreviousThreadMutex->NextThreadMutex = pthr->NextThreadMutex;
+        if (pthr->NextThreadMutex)
+            pthr->NextThreadMutex->PreviousThreadMutex = pthr->PreviousThreadMutex;
+        if (pthr->PreviousThreadMutex)
+            pthr->PreviousThreadMutex->NextThreadMutex = pthr->NextThreadMutex;
         if(mutex->FirstWaiting == pthr)
             mutex->FirstWaiting = pthr->NextThreadMutex;
         if(mutex->LastWaiting == pthr)
@@ -109,7 +111,7 @@ unsigned int mutex_acquire(MUTEX *mutex, int timeout)
         acquired = 1;
     
     // Unlock
-    thread_unlock(&ThreadListLock, irql);
+    //thread_unlock(&ThreadListLock, irql);
     unlock(&mutex->Lock);
     
     // Exit
