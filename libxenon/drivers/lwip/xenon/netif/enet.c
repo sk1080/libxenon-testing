@@ -7,33 +7,18 @@
 #include "lwip/stats.h"
 #include "lwip/timers.h"
 #include "netif/etharp.h"
+#include "enet.h"
 
 #include <time/time.h>
 #include <xenon_nand/xenon_config.h>
 #include <ppc/cache.h>
 #include <pci/io.h>
 #include <xenon_smc/xenon_gpio.h>
+#include <threads/mutex.h>
 
-#define TX_DESCRIPTOR_NUM 0x10
-#define RX_DESCRIPTOR_NUM 0x10
-#define MTU 1528
-#define MEM(x) (0x80000000|(long)(x))
-
-struct enet_context
-{
-	volatile uint32_t *rx_descriptor_base;
-	void *rx_receive_base;
-	int rx_descriptor_rptr;
-
-	volatile uint32_t *tx_descriptor_base;
-	int tx_descriptor_wptr;
-	void *tx_buffer_base;
-
-	struct eth_addr *ethaddr;
-};
 
 static int enet_open(struct netif *ctx);
-static struct pbuf *enet_linkinput(struct enet_context *context);
+static struct pbuf *enet_linkinput(enet_context *context);
 static err_t enet_linkoutput(struct netif *netif, struct pbuf *p);
 //static err_t enet_output(struct netif *netif, struct pbuf *p, ip_addr_t *ipaddr);
 
@@ -50,7 +35,7 @@ static void phy_write(int addr, unsigned short data)
 	do {mdelay(1);} while (__builtin_bswap32(read32n(0xea001444)) & 0x10);
 }
 
-static void wait_empty_tx(struct enet_context *context)
+static void wait_empty_tx(enet_context *context)
 {
 //	printf(">> CURRENT TX PTR: %08x\n", __builtin_bswap32(read32n(0xea00140c)));
 	while (__builtin_bswap32(context->tx_descriptor_base[context->tx_descriptor_wptr * 4 + 1]) & 0x80000000); // busy
@@ -61,7 +46,7 @@ static inline int virt_to_phys(volatile void *ptr)
 	return ((long)ptr) & 0x7FFFFFFF;
 }
 
-static void tx_data(struct enet_context *context, unsigned char *data, int len)
+static void tx_data(enet_context *context, unsigned char *data, int len)
 {
 	wait_empty_tx(context);
 	int descnr = context->tx_descriptor_wptr;
@@ -94,7 +79,7 @@ static void tx_data(struct enet_context *context, unsigned char *data, int len)
 //	printf("TX\n");
 }
 
-static void tx_init(struct enet_context *context, void *base)
+static void tx_init(enet_context *context, void *base)
 {
 	int i;
 
@@ -125,7 +110,7 @@ static void tx_init(struct enet_context *context, void *base)
 }
 
 
-static void rx_init(struct enet_context *context, void *base)
+static void rx_init(enet_context *context, void *base)
 {
 	int i;
 
@@ -158,14 +143,14 @@ arp_timer(void *arg)
 
 err_t enet_init(struct netif *netif)
 {
-	struct enet_context * context;
+	enet_context * context;
 
-	context = (struct enet_context *)mem_malloc(sizeof(struct enet_context));
+	context = (enet_context *)mem_malloc(sizeof(enet_context));
 	if(context == NULL) {
 		printf("enet: Failed to allocate context memory.\n");
 		return ERR_MEM;
 	} else {
-		memset(context, 0, sizeof(struct enet_context));
+		memset(context, 0, sizeof(enet_context));
 
 		// enet_write_mac_address(context, m);
 		xenon_config_get_mac_addr(&netif->hwaddr[0]);
@@ -180,7 +165,7 @@ err_t enet_init(struct netif *netif)
 
 	netif->hwaddr_len = 6;
 	netif->mtu = 1500;
-	netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
+	netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
 
 #if LWIP_NETIF_HOSTNAME
     netif->hostname = "XeLL";
@@ -197,7 +182,7 @@ err_t enet_init(struct netif *netif)
 
 static int enet_open(struct netif *netif)
 {
-	struct enet_context *context = (struct enet_context *) netif->state;
+	enet_context *context = (enet_context *) netif->state;
 
 	//printf("NIC reset\n");
 	write32n(0xea001424, 0); // disable interrupts
@@ -283,7 +268,7 @@ static int enet_open(struct netif *netif)
 	return 0;
 }
 
-static struct pbuf *enet_linkinput(struct enet_context *context)
+static struct pbuf *enet_linkinput(enet_context *context)
 {
 	volatile uint32_t *d = context->rx_descriptor_base + context->rx_descriptor_rptr * 4;
 	memdcbf(d, 0x10);
@@ -345,7 +330,7 @@ static struct pbuf *enet_linkinput(struct enet_context *context)
 static err_t enet_linkoutput(struct netif *netif, struct pbuf *p)
 {
 	struct pbuf *q;
-	struct enet_context *context = (struct enet_context *) netif->state;
+	enet_context *context = (enet_context *) netif->state;
 
 //	printf("enet linkoutput\n");
 
@@ -379,7 +364,7 @@ enet_output(struct netif *netif, struct pbuf *p,
 static void
 enet_input(struct netif *netif)
 {
-	struct enet_context *context = (struct enet_context *) netif->state;
+	enet_context *context = (enet_context *) netif->state;
 	struct eth_hdr *ethhdr;
 	struct pbuf *p;
 
@@ -392,7 +377,11 @@ enet_input(struct netif *netif)
 	lwip_stats.link.recv++;
 #endif /* LINK_STATS */
 
-	ethhdr = p->payload;
+#if !NO_SYS
+        /* pass to network layer */
+	netif->input(p, netif);
+#else /* !NO_SYS */
+        ethhdr = p->payload;
 
 	switch (htons(ethhdr->type))
 	{
@@ -415,6 +404,7 @@ enet_input(struct netif *netif)
 		p = NULL;
 		break;
 	}
+#endif /* !NO_SYS */
 }
 
 int cnt;

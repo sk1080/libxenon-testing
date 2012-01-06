@@ -28,18 +28,55 @@
  *
  * This file is part of the lwIP TCP/IP stack.
  * 
- * Author: Adam Dunkels <adam@sics.se>
+ * Author:              Adam Dunkels <adam@sics.se>
+ * Ported (xenon):      Austin Morton (Juvenal) <amorton@juvsoft.com>
  *
- * $Id: sys_arch.h,v 1.1 2007/03/19 20:10:29 tmbinc Exp $
  */
 #ifndef __SYS_C64_H__
 #define __SYS_C64_H__
 
-#define SYS_MBOX_NULL 0
-#define SYS_SEM_NULL  0
+#include <threads/mutex.h>
+#include <threads/threads.h>
 
-typedef int sys_sem_t;
-typedef int sys_mbox_t;
-typedef int sys_thread_t;
+/* let sys.h use binary semaphores for mutexes */
+#define LWIP_COMPAT_MUTEX 1
+
+/* SEMAPHORE */
+
+#define SYS_SEM_NULL  NULL
+#define sys_sem_valid(sema) ((sema != NULL) && ((sema)->sem != NULL))
+#define sys_sem_set_invalid(sema) ((sema)->sem = NULL)
+
+struct _sys_sem {
+    MUTEX *sem;
+};
+typedef struct _sys_sem sys_sem_t;
+
+
+/* MBOX */
+
+#ifndef MAX_QUEUE_ENTRIES
+#define MAX_QUEUE_ENTRIES 100
+#endif
+
+#define SYS_MBOX_NULL NULL
+#define sys_mbox_valid(mbox) ((mbox != NULL) && ((mbox)->sem != NULL))
+#define sys_mbox_set_invalid(mbox) ((mbox)->sem = NULL)
+
+struct lwip_mbox {
+  MUTEX *sem;
+  void *q_mem[MAX_QUEUE_ENTRIES];
+  u32_t head, tail;
+};
+typedef struct lwip_mbox sys_mbox_t;
+
+
+/* THREAD */
+
+struct _sys_thread_data {
+    struct sys_timeo *timeouts;
+} sys_thread_data_t;
+//only need a PTHREAD, other bits stored in the thread itself
+typedef PTHREAD sys_thread_t;
 
 #endif /* __SYS_C64_H__ */

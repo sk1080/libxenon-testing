@@ -615,7 +615,7 @@ PTHREAD thread_pool_alloc()
             ThreadPool[i].Valid = 1;
             ThreadPool[i].ThreadId = i;
             
-            printf("Thread %i Allocated\n", i);
+            //printf("Thread %i Allocated\n", i);
             
             return &ThreadPool[i];
         }
@@ -678,9 +678,9 @@ void thread_terminate(unsigned int returnCode)
 
 void thread_proc_startup(thread_proc entrypoint, void* argument)
 {
-    printf("Thread Start %08X\n", thread_get_processor_block()->CurrentThread);
+    //printf("Thread Start %08X\n", thread_get_processor_block()->CurrentThread);
     int ret = entrypoint(argument);
-    printf("Thread End %08X\n", thread_get_processor_block()->CurrentThread);
+    //printf("Thread End %08X\n", thread_get_processor_block()->CurrentThread);
     
     thread_terminate(ret);
 }
@@ -766,8 +766,8 @@ void thread_set_processor(PTHREAD pthr, unsigned int processor)
     
     if(pthr->ThisProcessor != newProcess)
     {
-        printf("pthr=%08X next=%08X previous=%08X\n",
-                pthr, pthr->NextThread, pthr->PreviousThread);
+        //printf("pthr=%08X next=%08X previous=%08X\n",
+        //        pthr, pthr->NextThread, pthr->PreviousThread);
         
         // Unlink the thread from its processor
         pthr->NextThread->PreviousThread = pthr->PreviousThread;

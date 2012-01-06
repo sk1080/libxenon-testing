@@ -24,7 +24,7 @@ INCLUDES = -I ../../drivers -I ../../include \
 
 CFLAGS = -g -mcpu=cell -mtune=cell -Os \
 	-maltivec \
-	-ffunction-sections -fdata-sections \
+	-ffunction-sections -fno-builtin-printf -fdata-sections \
 	-Wall -Wno-format -Wno-attributes -I. -DBYTE_ORDER=BIG_ENDIAN \
 	-m32 -fno-pic -mpowerpc64 \
 	-D_CFE_=1 -DENDIAN_BIG=1 \
@@ -90,32 +90,40 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/xenos/xe.o \
 	../../drivers/xenos/xenos.o \
 	../../drivers/xenos/xenos_edid.o \
+	../../drivers/lwip/api/api_lib.o \
+	../../drivers/lwip/api/api_msg.o \
+	../../drivers/lwip/api/err.o \
+	../../drivers/lwip/api/netbuf.o \
+	../../drivers/lwip/api/netifapi.o \
+	../../drivers/lwip/api/sockets.o \
+	../../drivers/lwip/api/tcpip.o \
+	../../drivers/lwip/core/def.o \
+	../../drivers/lwip/core/dhcp.o \
 	../../drivers/lwip/core/init.o \
-	../../drivers/lwip/core/tcp_in.o \
+	../../drivers/lwip/core/ipv4/icmp.o \
 	../../drivers/lwip/core/ipv4/inet_chksum.o \
 	../../drivers/lwip/core/ipv4/inet.o \
+	../../drivers/lwip/core/ipv4/ip_addr.o \
+	../../drivers/lwip/core/ipv4/ip_frag.o \
+	../../drivers/lwip/core/ipv4/ip.o \
 	../../drivers/lwip/core/mem.o \
 	../../drivers/lwip/core/memp.o \
 	../../drivers/lwip/core/netif.o \
 	../../drivers/lwip/core/pbuf.o \
+	../../drivers/lwip/core/raw.o \
 	../../drivers/lwip/core/stats.o \
 	../../drivers/lwip/core/sys.o \
+	../../drivers/lwip/core/tcp_in.o \
 	../../drivers/lwip/core/tcp.o \
-	../../drivers/lwip/core/ipv4/ip_addr.o \
-	../../drivers/lwip/core/ipv4/icmp.o \
-	../../drivers/lwip/core/ipv4/ip.o \
-	../../drivers/lwip/core/ipv4/ip_frag.o \
 	../../drivers/lwip/core/tcp_out.o \
+	../../drivers/lwip/core/timers.o \
 	../../drivers/lwip/core/udp.o \
 	../../drivers/lwip/netif/etharp.o \
 	../../drivers/lwip/netif/loopif.o \
-	../../drivers/lwip/core/dhcp.o \
-	../../drivers/lwip/core/raw.o \
-	../../drivers/lwip/core/def.o \
-	../../drivers/lwip/core/timers.o \
-	../../drivers/lwip/xenon/src/lib.o \
 	../../drivers/lwip/xenon/netif/enet.o \
-	../../drivers/network/network.o\
+	../../drivers/lwip/xenon/src/lib.o \
+	../../drivers/lwip/xenon/src/sys_arch.o \
+	../../drivers/network/network.o \
 	../../drivers/elf/elf.o \
 	../../drivers/elf/elf_run.o \
 	../../drivers/threads/threads.o \
