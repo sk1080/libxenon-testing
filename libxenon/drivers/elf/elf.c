@@ -12,8 +12,8 @@
 
 #include "elf_abi.h"
 
-#define INITRD_START ((void*)0x85FE0000)
-#define INITRD_MAX_SIZE 0x2000000
+#define INITRD_RELOC_START ((void*)0x85FE0000)
+#define INITRD_MAX_SIZE (32*1024*1024)
 
 #define ELF_DEVTREE_START ((void*)0x87FE0000)
 #define ELF_DEVTREE_MAX_SIZE 0x10000
@@ -258,55 +258,61 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
 	}		
 	memset(ELF_DEVTREE_START,0,ELF_DEVTREE_MAX_SIZE);
 
-    res = fdt_open_into(dt_addr, ELF_DEVTREE_START, ELF_DEVTREE_MAX_SIZE);
+        res = fdt_open_into(dt_addr, ELF_DEVTREE_START, ELF_DEVTREE_MAX_SIZE);
 	if (res < 0){
 		printf(" ! fdt_open_into() failed\n"); 
-        return;
-    }
+                return;
+        }
 
 	node = fdt_path_offset(ELF_DEVTREE_START, "/chosen");
 	if (node < 0){
 		printf(" ! /chosen node not found in devtree\n"); 
                 return;
-    }
+        }
         
-    if (bootargs[0])
-    {
-    	res = fdt_setprop(ELF_DEVTREE_START, node, "bootargs", bootargs, strlen(bootargs)+1);
-    	if (res < 0){
+        if (bootargs && bootargs[0])
+        {
+                res = fdt_setprop(ELF_DEVTREE_START, node, "bootargs", bootargs, strlen(bootargs)+1);
+                if (res < 0){
         	printf(" ! couldn't set chosen.bootargs property\n"); 
         	return;
-     	}
-     }
+                }
+        }
 	
-    if (initrd_start && initrd_size)
+        if (initrd_start && initrd_size)
 	{
-		u64 start, end;
+                printf(" * Relocating initrd...\n");
+                memset(INITRD_RELOC_START,0,INITRD_MAX_SIZE);
+                memcpy(INITRD_RELOC_START,initrd_start,initrd_size);
+                
+                initrd_start = INITRD_RELOC_START;
+                
+                u64 start, end;
 		start = (u32)PHYSADDR((uint64_t)initrd_start);
 		res = fdt_setprop(ELF_DEVTREE_START, node, "linux,initrd-start", &start, sizeof(start));
 		if (res < 0){
 			printf("couldn't set chosen.linux,initrd-start property\n");
-            return;
-        }
+                        return;
+                }
 
 		end = (u32)PHYSADDR((uint64_t)initrd_start + (uint64_t)initrd_size);
 		res = fdt_setprop(ELF_DEVTREE_START, node, "linux,initrd-end", &end, sizeof(end));
 		if (res < 0) {
 			printf("couldn't set chosen.linux,initrd-end property\n");
-            return;
-        }
+                        return;
+                }
 		res = fdt_add_mem_rsv(ELF_DEVTREE_START, start, initrd_size);
 		if (res < 0) {
 			printf("couldn't add reservation for the initrd\n");
-            return;
-        }
+                        return;
+                }
 	}
         
 	 node = fdt_path_offset(ELF_DEVTREE_START, "/memory");
 	 if (node < 0){
 		printf(" ! /memory node not found in devtree\n"); 
-        return;
-     }
+                return;
+         }
 /*
 	res = fdt_add_mem_rsv(ELF_DEVTREE_START, (uint64_t)ELF_DEVTREE_START, ELF_DEVTREE_MAX_SIZE);
 	if (res < 0){
@@ -318,8 +324,8 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
 	res = fdt_pack(ELF_DEVTREE_START);
 	if (res < 0){
 		printf(" ! fdt_pack() failed\n"); 
-        return;
-    }
+                return;
+        }
 
 	printf(" * Device tree prepared\n"); 
 	
@@ -328,16 +334,16 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
 
 void kernel_set_initrd(void *start, size_t size)
 {       
-		if (size > INITRD_MAX_SIZE){
-			printf(" ! Initrd bigger than 32 MB, Aborting!\n");
-			return;
-		}
-			
-        printf(" * Relocating initrd...\n");
-        memset(INITRD_START,0,INITRD_MAX_SIZE);
-        memcpy(INITRD_START,start,size);
+	if (size > INITRD_MAX_SIZE){
+                printf(" ! Initrd bigger than 32 MB, Aborting!\n");
+		return;
+	}
         
-        initrd_start = INITRD_START;
+        if (initrd_start != NULL) free(initrd_start);
+        
+        initrd_start = (uint8_t*)malloc(size);
+        memcpy(initrd_start,start,size);
+        
         initrd_size = size;
         
         printf("Initrd at %p/0x%lx: %ld bytes (%ldKiB)\n", initrd_start, \
@@ -345,9 +351,7 @@ void kernel_set_initrd(void *start, size_t size)
 }
 
 void kernel_reset_initrd(void)
-{
-    memset(INITRD_START,0,INITRD_MAX_SIZE);
-    
+{   
     initrd_start = NULL;
     initrd_size = 0;
 }
