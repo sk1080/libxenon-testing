@@ -54,7 +54,7 @@ static void thread_interrupt_unexpected(unsigned int soc_interrupt)
 
 unsigned long long _system_time = 0; // System Timer (Used for telling time)
 unsigned long long _clock_time = 0; // Clock Timer (Used for timing stuff)
-unsigned long long _millisecond_clock_time = 0; // Millisecond Clock Timer
+volatile unsigned long long _millisecond_clock_time = 0; // Millisecond Clock Timer
 static void thread_interrupt_clock(unsigned int soc_interrupt)
 {
     stw((volatile void*)0xEA00106C, 0x01000000);
@@ -306,6 +306,11 @@ PTHREAD thread_schedule_core()
             pthr->PreviousThread->NextThread = pthr->NextThread;
             pthr->NextThreadFull->PreviousThreadFull = pthr->PreviousThreadFull;
             pthr->PreviousThreadFull->NextThreadFull = pthr->NextThreadFull;
+            // Make sure we dont explode
+            if(pthr == processor->FirstThread)
+                processor->FirstThread = pthr->NextThread;
+            if(pthr == processor->LastThread)
+                processor->LastThread = pthr->PreviousThread;
             // Mark as unused
             pthr->Valid = 0;
         }
@@ -341,7 +346,7 @@ PTHREAD thread_schedule_core()
     pthr = processor->FirstThread;
     do
     {
-        if((pthr->SuspendCount == 0) && (pthr->SleepTime == 0) && pthr->Valid)
+        if((pthr->ThreadTerminated == 0) && (pthr->SuspendCount == 0) && (pthr->SleepTime == 0) && pthr->Valid)
         {
             if(readyList.FirstThread == NULL)
             {
@@ -510,7 +515,7 @@ void system_call_handler()
     restore_thread_context(&context);
 }
 
-void thread_sleep(int milliseconds)
+void thread_sleep(unsigned int milliseconds)
 {
     PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
     unsigned long long sleep_time = _millisecond_clock_time + milliseconds;
@@ -610,7 +615,7 @@ PTHREAD thread_pool_alloc()
             ThreadPool[i].Valid = 1;
             ThreadPool[i].ThreadId = i;
             
-            printf("Thread %i Allocated\n", i);
+            //printf("Thread %i Allocated\n", i);
             
             return &ThreadPool[i];
         }
@@ -673,9 +678,9 @@ void thread_terminate(unsigned int returnCode)
 
 void thread_proc_startup(thread_proc entrypoint, void* argument)
 {
-    printf("Thread Start %08X\n", thread_get_processor_block()->CurrentThread);
+    //printf("Thread Start %08X\n", thread_get_processor_block()->CurrentThread);
     int ret = entrypoint(argument);
-    printf("Thread End %08X\n", thread_get_processor_block()->CurrentThread);
+    //printf("Thread End %08X\n", thread_get_processor_block()->CurrentThread);
     
     thread_terminate(ret);
 }
@@ -761,8 +766,8 @@ void thread_set_processor(PTHREAD pthr, unsigned int processor)
     
     if(pthr->ThisProcessor != newProcess)
     {
-        printf("pthr=%08X next=%08X previous=%08X\n",
-                pthr, pthr->NextThread, pthr->PreviousThread);
+        //printf("pthr=%08X next=%08X previous=%08X\n",
+        //        pthr, pthr->NextThread, pthr->PreviousThread);
         
         // Unlink the thread from its processor
         pthr->NextThread->PreviousThread = pthr->PreviousThread;

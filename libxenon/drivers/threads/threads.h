@@ -229,7 +229,7 @@ void process_set_quantum_length(unsigned int milliseconds);
 void thread_terminate(unsigned int returnCode);
 
 // Sleep
-void thread_sleep(int milliseconds);
+void thread_sleep(unsigned int milliseconds);
 
 // Raise/Lower irql
 int thread_raise_irql(unsigned int irql);
@@ -263,7 +263,7 @@ unsigned int dpc_queue(DPC *dpc, void *param1, void *param2, void *param3);
 extern unsigned int ThreadListLock;
 extern unsigned long long _system_time; // System Timer (Used for telling time)
 extern unsigned long long _clock_time; // Clock Timer (Used for timing stuff)
-extern unsigned long long _millisecond_clock_time; // Millisecond Clock Timer
+volatile extern unsigned long long _millisecond_clock_time; // Millisecond Clock Timer
 
 #ifdef	__cplusplus
 }

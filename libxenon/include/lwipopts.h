@@ -37,44 +37,90 @@
 #include <string.h>
 #include <stdio.h>
 
-#define NO_SYS                  1
-#define NO_SYS_NO_TIMERS		1
-#define ETHARP_TRUST_IP_MAC		1
+#define NO_SYS                  0
 
-#define LWIP_CALLBACK_API       1
+
+/* FEATURES */
+
 #define LWIP_TCP                1
 #define LWIP_UDP                1
 #define LWIP_DHCP               1
-#define LWIP_SOCKET             0
-#define LWIP_NETCONN            0
+#define LWIP_DNS                1
+#define LWIP_SOCKET             1
+#define LWIP_NETCONN            1
 #define LWIP_NETIF_HOSTNAME     1
+#define LWIP_NETIF_API          1
 
+
+/* SETTINGS */
+
+#define LWIP_PROVIDE_ERRNO      1
 #define MEM_ALIGNMENT           4
-#define MEM_SIZE                (4 * 1024 * 1024)
 #define MEMP_NUM_PBUF           1024
-#define MEMP_NUM_UDP_PCB        20
+#define MEMP_NUM_SYS_TIMEOUT    20
 #define MEMP_NUM_TCP_PCB        20
 #define MEMP_NUM_TCP_PCB_LISTEN 16
 #define MEMP_NUM_TCP_SEG        128
-#define MEMP_NUM_NETBUF         0
-#define MEMP_NUM_NETCONN        0
-#define MEMP_NUM_SYS_TIMEOUT    20
+#define MEMP_NUM_UDP_PCB        20
+#define MEM_SIZE                (4 * 1024 * 1024)
 #define PBUF_POOL_SIZE          512
-#define TCP_TTL                 255
-#define TCP_QUEUE_OOSEQ         1
 #define TCP_MSS                 1476
 #define TCP_SND_BUF             (8 * TCP_MSS)
-#define TCP_WND                 (4 * TCP_MSS)
-#define ARP_QUEUEING            1
-#define IP_FORWARD              0
-#define IP_OPTIONS              1
-#define DHCP_DOES_ARP_CHECK     1
+
+#define LWIP_NETIF_STATUS_CALLBACK      (!NO_SYS)
+#define LWIP_NETIF_LINK_CALLBACK        (!NO_SYS)
 
 
-//#define LWIP_DEBUG 					1
-//#define DHCP_DEBUG                    LWIP_DBG_ON
-//#define NETIF_DEBUG                   LWIP_DBG_ON
-//#define TIMERS_DEBUG                  LWIP_DBG_ON
-//#define LWIP_DEBUG_TIMERNAMES			1
+/* STATS */
+
+#define LWIP_STATS_DISPLAY      1
+
+
+/* DEBUG */
+
+#define LWIP_DEBUG              1
+#define LWIP_DEBUG_TIMERNAMES   LWIP_DEBUG
+#define LWIP_DBG_MIN_LEVEL      LWIP_DBG_LEVEL_ALL
+
+
+#define DBG_FLAG                LWIP_DBG_OFF
+
+
+#define API_LIB_DEBUG           DBG_FLAG
+#define API_MSG_DEBUG           DBG_FLAG
+#define AUTOIP_DEBUG            DBG_FLAG
+#define DHCP_DEBUG              DBG_FLAG
+#define DNS_DEBUG               DBG_FLAG
+#define ETHARP_DEBUG            DBG_FLAG
+#define ICMP_DEBUG              DBG_FLAG
+#define IGMP_DEBUG              DBG_FLAG
+#define INET_DEBUG              DBG_FLAG
+#define IP_DEBUG                DBG_FLAG
+#define IP_REASS_DEBUG          DBG_FLAG
+#define MEM_DEBUG               DBG_FLAG
+#define MEMP_DEBUG              DBG_FLAG
+#define NETIF_DEBUG             DBG_FLAG
+#define PBUF_DEBUG              DBG_FLAG
+#define PPP_DEBUG               DBG_FLAG
+#define RAW_DEBUG               DBG_FLAG
+#define SLIP_DEBUG              DBG_FLAG
+#define SNMP_MIB_DEBUG          DBG_FLAG
+#define SNMP_MSG_DEBUG          DBG_FLAG
+#define SOCKETS_DEBUG           DBG_FLAG
+#define SYS_DEBUG               DBG_FLAG
+#define SYS_ARCH_DEBUG          DBG_FLAG
+#define TCP_CWND_DEBUG          DBG_FLAG
+#define TCP_DEBUG               DBG_FLAG
+#define TCP_FR_DEBUG            DBG_FLAG
+#define TCP_INPUT_DEBUG         DBG_FLAG
+#define TCPIP_DEBUG             DBG_FLAG
+#define TCP_OUTPUT_DEBUG        DBG_FLAG
+#define TCP_QLEN_DEBUG          DBG_FLAG
+#define TCP_RST_DEBUG           DBG_FLAG
+#define TCP_RTO_DEBUG           DBG_FLAG
+#define TCP_WND_DEBUG           DBG_FLAG
+#define TIMERS_DEBUG            DBG_FLAG
+#define UDP_DEBUG               DBG_FLAG
+
 
 #endif /* __LWIPOPTS_H__ */

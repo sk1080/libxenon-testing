@@ -1,6 +1,6 @@
 // Threading utility
 
-#include <ppc\xenonsprs.h>
+#include <ppc/xenonsprs.h>
 
 #define OFF_REG(r) r * 8
 #define REG_LR 32
