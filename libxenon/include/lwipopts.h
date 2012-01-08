@@ -42,11 +42,11 @@
 
 /* FEATURES */
 
-#define LWIP_CALLBACK_API       1
 #define LWIP_TCP                1
 #define LWIP_UDP                1
 #define LWIP_DHCP               1
-#define LWIP_SOCKET             0
+#define LWIP_DNS                1
+#define LWIP_SOCKET             1
 #define LWIP_NETCONN            1
 #define LWIP_NETIF_HOSTNAME     1
 #define LWIP_NETIF_API          1
@@ -54,13 +54,8 @@
 
 /* SETTINGS */
 
-#define DHCP_DOES_ARP_CHECK     1
-#define IP_FORWARD              0
-#define IP_OPTIONS_ALLOWED      1
 #define LWIP_PROVIDE_ERRNO      1
 #define MEM_ALIGNMENT           4
-#define MEMP_NUM_NETBUF         2
-#define MEMP_NUM_NETCONN        4
 #define MEMP_NUM_PBUF           1024
 #define MEMP_NUM_SYS_TIMEOUT    20
 #define MEMP_NUM_TCP_PCB        20
@@ -70,10 +65,7 @@
 #define MEM_SIZE                (4 * 1024 * 1024)
 #define PBUF_POOL_SIZE          512
 #define TCP_MSS                 1476
-#define TCP_QUEUE_OOSEQ         1
 #define TCP_SND_BUF             (8 * TCP_MSS)
-#define TCP_TTL                 255
-#define TCP_WND                 (4 * TCP_MSS)
 
 #define LWIP_NETIF_STATUS_CALLBACK      (!NO_SYS)
 #define LWIP_NETIF_LINK_CALLBACK        (!NO_SYS)
@@ -87,48 +79,48 @@
 /* DEBUG */
 
 #define LWIP_DEBUG              1
-#define LWIP_DEBUG_TIMERNAMES   1
+#define LWIP_DEBUG_TIMERNAMES   LWIP_DEBUG
 #define LWIP_DBG_MIN_LEVEL      LWIP_DBG_LEVEL_ALL
 
 
-#define DBG_ON                  LWIP_DBG_OFF
+#define DBG_FLAG                LWIP_DBG_OFF
 
 
-#define API_LIB_DEBUG           DBG_ON
-#define API_MSG_DEBUG           DBG_ON
-#define AUTOIP_DEBUG            DBG_ON
-#define DHCP_DEBUG              DBG_ON
-#define DNS_DEBUG               DBG_ON
-#define ETHARP_DEBUG            DBG_ON
-#define ICMP_DEBUG              DBG_ON
-#define IGMP_DEBUG              DBG_ON
-#define INET_DEBUG              DBG_ON
-#define IP_DEBUG                DBG_ON
-#define IP_REASS_DEBUG          DBG_ON
-#define MEM_DEBUG               DBG_ON
-#define MEMP_DEBUG              DBG_ON
-#define NETIF_DEBUG             DBG_ON
-#define PBUF_DEBUG              DBG_ON
-#define PPP_DEBUG               DBG_ON
-#define RAW_DEBUG               DBG_ON
-#define SLIP_DEBUG              DBG_ON
-#define SNMP_MIB_DEBUG          DBG_ON
-#define SNMP_MSG_DEBUG          DBG_ON
-#define SOCKETS_DEBUG           DBG_ON
-#define SYS_DEBUG               DBG_ON
-#define SYS_ARCH_DEBUG          DBG_ON
-#define TCP_CWND_DEBUG          DBG_ON
-#define TCP_DEBUG               DBG_ON
-#define TCP_FR_DEBUG            DBG_ON
-#define TCP_INPUT_DEBUG         DBG_ON
-#define TCPIP_DEBUG             DBG_ON
-#define TCP_OUTPUT_DEBUG        DBG_ON
-#define TCP_QLEN_DEBUG          DBG_ON
-#define TCP_RST_DEBUG           DBG_ON
-#define TCP_RTO_DEBUG           DBG_ON
-#define TCP_WND_DEBUG           DBG_ON
-#define TIMERS_DEBUG            DBG_ON
-#define UDP_DEBUG               DBG_ON
+#define API_LIB_DEBUG           DBG_FLAG
+#define API_MSG_DEBUG           DBG_FLAG
+#define AUTOIP_DEBUG            DBG_FLAG
+#define DHCP_DEBUG              DBG_FLAG
+#define DNS_DEBUG               DBG_FLAG
+#define ETHARP_DEBUG            DBG_FLAG
+#define ICMP_DEBUG              DBG_FLAG
+#define IGMP_DEBUG              DBG_FLAG
+#define INET_DEBUG              DBG_FLAG
+#define IP_DEBUG                DBG_FLAG
+#define IP_REASS_DEBUG          DBG_FLAG
+#define MEM_DEBUG               DBG_FLAG
+#define MEMP_DEBUG              DBG_FLAG
+#define NETIF_DEBUG             DBG_FLAG
+#define PBUF_DEBUG              DBG_FLAG
+#define PPP_DEBUG               DBG_FLAG
+#define RAW_DEBUG               DBG_FLAG
+#define SLIP_DEBUG              DBG_FLAG
+#define SNMP_MIB_DEBUG          DBG_FLAG
+#define SNMP_MSG_DEBUG          DBG_FLAG
+#define SOCKETS_DEBUG           DBG_FLAG
+#define SYS_DEBUG               DBG_FLAG
+#define SYS_ARCH_DEBUG          DBG_FLAG
+#define TCP_CWND_DEBUG          DBG_FLAG
+#define TCP_DEBUG               DBG_FLAG
+#define TCP_FR_DEBUG            DBG_FLAG
+#define TCP_INPUT_DEBUG         DBG_FLAG
+#define TCPIP_DEBUG             DBG_FLAG
+#define TCP_OUTPUT_DEBUG        DBG_FLAG
+#define TCP_QLEN_DEBUG          DBG_FLAG
+#define TCP_RST_DEBUG           DBG_FLAG
+#define TCP_RTO_DEBUG           DBG_FLAG
+#define TCP_WND_DEBUG           DBG_FLAG
+#define TIMERS_DEBUG            DBG_FLAG
+#define UDP_DEBUG               DBG_FLAG
 
 
 #endif /* __LWIPOPTS_H__ */
