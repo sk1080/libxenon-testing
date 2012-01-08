@@ -120,6 +120,13 @@ LIBOBJS = crti.o crtn.o \
         ../../drivers/libfdt/fdt_strerror.o \
         ../../drivers/libfdt/fdt_sw.o \
         ../../drivers/libfdt/fdt_wip.o
+	../../drivers/threads/threads.o \
+	../../drivers/threads/c_threads.o \
+	../../drivers/threads/debug.o \
+	../../drivers/threads/c_debug.o \
+	../../drivers/threads/gdb.o \
+	../../drivers/threads/mutex.o
+
 
 # Build rules
 all: $(TARGETS)
