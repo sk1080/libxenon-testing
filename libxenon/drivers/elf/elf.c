@@ -198,6 +198,7 @@ void elf_runFromMemory (void *addr, int size)
 {
 	int i;
 	
+        printf(" * Executing...\n");
 	shutdown_drivers();
 	
 	// relocate code
@@ -270,7 +271,7 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
                 return;
         }
         
-        if (bootargs && bootargs[0])
+        if (bootargs[0])
         {
                 res = fdt_setprop(ELF_DEVTREE_START, node, "bootargs", bootargs, strlen(bootargs)+1);
                 if (res < 0){
@@ -281,11 +282,7 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
 	
         if (initrd_start && initrd_size)
 	{
-                printf(" * Relocating initrd...\n");
-                memset(INITRD_RELOC_START,0,INITRD_MAX_SIZE);
-                memcpy(INITRD_RELOC_START,initrd_start,initrd_size);
-                
-                initrd_start = INITRD_RELOC_START;
+                kernel_relocate_initrd(initrd_start,initrd_size);
                 
                 u64 start, end;
 		start = (u32)PHYSADDR((uint64_t)initrd_start);
@@ -332,18 +329,29 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
 	elf_runFromMemory(elf_addr,elf_size);
 }
 
-void kernel_set_initrd(void *start, size_t size)
+void kernel_prepare_initrd(void *start, size_t size)
 {       
 	if (size > INITRD_MAX_SIZE){
                 printf(" ! Initrd bigger than 32 MB, Aborting!\n");
 		return;
 	}
         
-        if (initrd_start != NULL) free(initrd_start);
-        
+        if(initrd_start != NULL)
+            free(initrd_start);
         initrd_start = (uint8_t*)malloc(size);
-        memcpy(initrd_start,start,size);
         
+        memcpy(initrd_start,start,size);
+        initrd_size = size;
+}
+
+void kernel_relocate_initrd(void *start, size_t size)
+{       
+        printf(" * Relocating initrd...\n");
+        
+        memset(INITRD_RELOC_START,0,INITRD_MAX_SIZE);
+        memcpy(INITRD_RELOC_START,start,size);
+        
+        initrd_start = INITRD_RELOC_START;
         initrd_size = size;
         
         printf("Initrd at %p/0x%lx: %ld bytes (%ldKiB)\n", initrd_start, \
