@@ -360,6 +360,9 @@ void kernel_relocate_initrd(void *start, size_t size)
 
 void kernel_reset_initrd(void)
 {   
+    if (initrd_start != NULL)
+        free(initrd_start);
+    
     initrd_start = NULL;
     initrd_size = 0;
 }
