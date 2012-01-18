@@ -457,7 +457,9 @@ static int usbctrl_attach(usbdev_t *dev,usb_driver_t *drv)
 	usb_endpoint_descr_t *epdscr;
 	usb_interface_descr_t *ifdscr;
 
-	int wireless = (GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x291) || (GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x2aa) || (GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x2a9);
+	int wireless = //(GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x291) || 
+					(GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x2aa) ||
+					(GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x2a9);
 
 	if(wireless)
 	{
@@ -480,7 +482,7 @@ static int usbctrl_attach(usbdev_t *dev,usb_driver_t *drv)
 			}
 		
 
-			printf("Initializing wireless controller %d\n", i);
+			//printf("Initializing wireless controller %d\n", i+1); // Be quiet
 			softc->index = -1;
 			softc->wireless_index = i;
 			//controller_mask |= 1<<i; //Dont set this right now, let wired controllers use the slots
