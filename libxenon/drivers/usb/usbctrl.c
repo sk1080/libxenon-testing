@@ -457,9 +457,9 @@ static int usbctrl_attach(usbdev_t *dev,usb_driver_t *drv)
 	usb_endpoint_descr_t *epdscr;
 	usb_interface_descr_t *ifdscr;
 
-	int wireless = //(GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x291) || 
-					(GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x2aa) ||
-					(GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x2a9);
+	int wireless = (GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x291) || 
+			(GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x2aa) ||
+			(GETUSBFIELD(&dev->ud_devdescr, idProduct) == 0x2a9);
 
 	if(wireless)
 	{
