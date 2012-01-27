@@ -1,3 +1,11 @@
+/*  devtree preparation & initrd handling
+
+Copyright (C) 2010-2011  Hector Martin "marcan" <hector@marcansoft.com>
+
+This code is licensed to you under the terms of the GNU GPL, version 2;
+see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -10,6 +18,7 @@
 #include <libfdt/libfdt.h>
 #include <nocfe/addrspace.h>
 
+#include "elf.h"
 #include "elf_abi.h"
 
 #define INITRD_RELOC_START ((void*)0x85FE0000)
@@ -285,14 +294,14 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
                 kernel_relocate_initrd(initrd_start,initrd_size);
                 
                 u64 start, end;
-		start = (u32)PHYSADDR((uint64_t)initrd_start);
+		start = (u32)PHYSADDR((u32)initrd_start);
 		res = fdt_setprop(ELF_DEVTREE_START, node, "linux,initrd-start", &start, sizeof(start));
 		if (res < 0){
 			printf("couldn't set chosen.linux,initrd-start property\n");
                         return;
                 }
 
-		end = (u32)PHYSADDR((uint64_t)initrd_start + (uint64_t)initrd_size);
+		end = (u32)PHYSADDR(((u32)initrd_start + (u32)initrd_size));
 		res = fdt_setprop(ELF_DEVTREE_START, node, "linux,initrd-end", &end, sizeof(end));
 		if (res < 0) {
 			printf("couldn't set chosen.linux,initrd-end property\n");
@@ -355,7 +364,7 @@ void kernel_relocate_initrd(void *start, size_t size)
         initrd_size = size;
         
         printf("Initrd at %p/0x%lx: %ld bytes (%ldKiB)\n", initrd_start, \
-        (u32)PHYSADDR((uint64_t)initrd_start), initrd_size, initrd_size/1024);
+        (u32)PHYSADDR((u32)initrd_start), initrd_size, initrd_size/1024);
 }
 
 void kernel_reset_initrd(void)

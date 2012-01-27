@@ -182,7 +182,8 @@ err_t enet_init(struct netif *netif)
 
 static int enet_open(struct netif *netif)
 {
-	enet_context *context = (enet_context *) netif->state;
+	int tries=10;
+	struct enet_context *context = (struct enet_context *) netif->state;
 
 	//printf("NIC reset\n");
 	write32n(0xea001424, 0); // disable interrupts
@@ -234,7 +235,12 @@ static int enet_open(struct netif *netif)
     xenon_gpio_control(4,0,0x10);
 
     phy_write(0, 0x9000);
-	while (phy_read(0) & 0x8000);
+
+	while (phy_read(0) & 0x8000){
+		mdelay(500);
+		tries--;
+		if (tries<=0) break;		
+	};
 
 //	phy_write(0x10, 0x8058);
 //	phy_write(4, 0x5e1);
@@ -243,7 +249,7 @@ static int enet_open(struct netif *netif)
 	int linkstate = phy_read(1);
 	if (!(linkstate & 4))
 	{
-		int tries=10;
+		tries=10;
 
 		printf("Waiting for link...");
 		while (!(phy_read(1) & 4)){
