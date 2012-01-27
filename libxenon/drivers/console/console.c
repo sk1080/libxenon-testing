@@ -190,6 +190,12 @@ void console_get_dimensions(unsigned int * width,unsigned int * height){
 	if (height) *height=max_y;
 }
 
+unsigned int console_get_color(int num){
+	if (num < 0 || num > 1)
+		return 0;
+    return console_color[num];
+}
+
 void console_close(void)
 {
 	stdout_hook = 0;
