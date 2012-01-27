@@ -181,8 +181,10 @@ void console_init(void) {
 }
 
 void console_set_colors(unsigned int background, unsigned int foreground){
-	console_color[0]=background;
-	console_color[1]=foreground;
+	if (background > -1)
+            console_color[0]=background;
+	if (foreground > -1)
+            console_color[1]=foreground;
 }
 
 void console_get_dimensions(unsigned int * width,unsigned int * height){

@@ -19,24 +19,17 @@ unsigned int old_console_color[2];
 #define CONSOLE_COLOR_ORANGE 0x0066FF00
 #define CONSOLE_COLOR_PINK 0xFF66FF00
 
-#define PRINT_WARN(s) \
-    old_console_color[1] = console_get_color(1); \
-    console_set_colors(console_get_color(0),CONSOLE_COLOR_YELLOW; \
-    printf("W: %s",s); \
-    console_set_colors(console_get_color(0),old_console_color[1]);
+#define CONSOLE_WARN CONSOLE_COLOR_YELLOW
+#define CONSOLE_ERR CONSOLE_COLOR_ORANGE
 
-#define PRINT_ERR(s) \
-    old_console_color[1] = console_get_color(1); \
-    console_set_colors(console_get_color(0),CONSOLE_COLOR_ORANGE; \
-    printf("EE: %s",s); \
-    console_set_colors(console_get_color(0),old_console_color[1]);
-
-#define PRINT_COL(bg, fg, s) \
+#define PRINT_COL(bg, fg, s, ...) \
         old_console_color[0] = console_get_color(0); old_console_color[1] = console_get_color(1); \
-        if (bg != -1) console_set_colors(bg,console_get_color(1)); \
-        if (fg != -1) console_set_colors(console_get_color(0),fg); \
-        printf(s); \
+        console_set_colors(bg,fg); \
+        printf(s, ##__VA_ARGS__); \
         console_set_colors(old_console_color[0],old_console_color[1]); 
+
+#define PRINT_WARN(s, ...) PRINT_COL(-1,CONSOLE_WARN,s, ##__VA_ARGS__)
+#define PRINT_ERR(s, ...) PRINT_COL(-1,CONSOLE_ERR,s, ##__VA_ARGS__)
 
 unsigned int console_get_color(int num);
 void console_set_colors(unsigned int background, unsigned int foreground); // can be called before init
