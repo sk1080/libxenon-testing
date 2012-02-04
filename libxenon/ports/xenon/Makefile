@@ -56,6 +56,7 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/nocfe/lib_malloc.o \
 	../../drivers/nocfe/lib_queue.o \
 	../../drivers/pci/io.o \
+	../../drivers/pci/interrupt.o\
 	../../drivers/ppc/atomic.o \
 	../../drivers/ppc/cache.o \
 	../../drivers/ppc/except.o \

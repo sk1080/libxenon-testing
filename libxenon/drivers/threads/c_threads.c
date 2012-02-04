@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <time/time.h>
 #include <ppc/atomic.h>
+#include <pci/interrupt.h>
 #include <string.h>
 #include <stdlib.h>
 #include <threads/mutex.h>
@@ -761,11 +762,14 @@ void thread_set_processor(PTHREAD pthr, unsigned int processor)
     unsigned int irql = thread_spinlock(&ThreadListLock);
     lock(&pthr->ThisProcessor->Lock);
     
+    PROCESSOR_DATA_BLOCK *oldProcess = pthr->ThisProcessor;
+
     PROCESSOR_DATA_BLOCK *newProcess =
             (PROCESSOR_DATA_BLOCK*)(processor_blocks + processor * 0x1000);
-    
-    if(pthr->ThisProcessor != newProcess)
+
+    if(oldProcess != newProcess)
     {
+    	lock(&newProcess->Lock);
         //printf("pthr=%08X next=%08X previous=%08X\n",
         //        pthr, pthr->NextThread, pthr->PreviousThread);
         
@@ -788,14 +792,18 @@ void thread_set_processor(PTHREAD pthr, unsigned int processor)
                 newProcess->LastSwapProcess->NextThread = pthr;
         newProcess->FirstSwapProcess = pthr;
             unlock(&newProcess->SwapProcessLock);
+
+    	pthr->ThisProcessor = newProcess;
+	unlock(&newProcess->Lock);
     }
     
-    unlock(&pthr->ThisProcessor->Lock);
+    unlock(oldProcess->Lock);
     thread_unlock(&ThreadListLock, irql);
     
     if(pthr == thread_get_current())
         asm volatile("sc"); // Invoke scheduler if we are swapping our process
 }
+
 
 void thread_close(PTHREAD pthr)
 {
@@ -1058,11 +1066,15 @@ void threading_shutdown()
             || thread_get_processor_block()->CurrentProcessor != 0)
         return;
     
+    printf("Shutting down threads\n");
+
     thread_raise_irql(0x7C);
     thread_disable_interrupts();
+    printf("..");
 
     // Wait for pending ipis to clear
     lock(&ipi_lock);
+    printf("..");
     
     // Tell everyone to shut down
     unsigned int ipi_count = 0;
@@ -1070,6 +1082,7 @@ void threading_shutdown()
             0x3F & ~(1 << thread_get_processor_block()->CurrentProcessor),
             &ipi_count);
     
+    printf("..");
     // Wait for everyone to stop
     while(wait[2]);
     while(wait[4]);
@@ -1089,6 +1102,11 @@ void threading_init()
         return;
     }
     threading_init_check = 1;
+
+    // Init pci irq
+    pci_irq_init();
+    interrupt_unmask(PRIO_CLOCK);
+    interrupt_unmask(PRIO_SMM);
     
     // Init the base threading stuff
     xenon_thread_startup();
