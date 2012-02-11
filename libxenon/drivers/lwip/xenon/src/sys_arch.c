@@ -143,6 +143,7 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size)
     LWIP_UNUSED_ARG(size);
     
     mbox->sem = mutex_create(MAX_QUEUE_ENTRIES);
+    mbox->lock = mutex_create(1);
     mbox->sem->CurrentLockCount = MAX_QUEUE_ENTRIES;
     LWIP_ASSERT("Error creating semaphore", mbox->sem != NULL);
     if(mbox->sem == NULL) {
@@ -161,7 +162,9 @@ void sys_mbox_free(sys_mbox_t *mbox)
     LWIP_ASSERT("mbox != NULL", mbox != NULL);
     LWIP_ASSERT("mbox->sem != NULL", mbox->sem != NULL);
     
+    mutex_acquire(mbox->lock, INFINITE);
     mutex_destroy(mbox->sem);
+    mutex_destroy(mbox->lock);
     
     SYS_STATS_DEC(mbox.used);
     mbox->sem = NULL;
@@ -176,6 +179,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
     LWIP_ASSERT("mbox != SYS_MBOX_NULL", mbox != SYS_MBOX_NULL);
     LWIP_ASSERT("mbox->sem != NULL", mbox->sem != NULL);
     
+    mutex_acquire(mbox->lock, INFINITE);
     mbox->q_mem[mbox->head] = msg;
     (mbox->head)++;
     if (mbox->head >= MAX_QUEUE_ENTRIES) {
@@ -183,6 +187,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
     }
     LWIP_ASSERT("mbox is full", mbox->head != mbox->tail);
     mutex_release(mbox->sem);
+    mutex_release(mbox->lock);
 }
 
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
@@ -191,11 +196,13 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
     LWIP_ASSERT("mbox != SYS_MBOX_NULL", mbox != SYS_MBOX_NULL);
     LWIP_ASSERT("mbox->sem != NULL", mbox->sem != NULL);
     
+    mutex_acquire(mbox->lock, INFINITE);
     u32_t new_head = mbox->head + 1;
     if (new_head >= MAX_QUEUE_ENTRIES) {
         new_head = 0;
     }
     if (new_head == mbox->tail) {
+    	mutex_release(mbox->lock);
         return ERR_MEM;
     }
     
@@ -203,6 +210,7 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
     mbox->head = new_head;
     LWIP_ASSERT("mbox is full!", mbox->head != mbox->tail);
     mutex_release(mbox->sem);
+    mutex_release(mbox->lock);
     return ERR_OK;
 }
 
@@ -218,11 +226,13 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
     
     u32_t start, end;
     start = sys_now();
+    mutex_acquire(mbox->lock, INFINITE);
     unsigned int aqrd = mutex_acquire(mbox->sem, timeout);
     if (aqrd == 0) {
         if (msg != NULL) {
             *msg = NULL;
         }
+        mutex_release(mbox->lock);
         return SYS_ARCH_TIMEOUT;
     }
     if (msg != NULL)
@@ -232,6 +242,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
     if (mbox->tail >= MAX_QUEUE_ENTRIES) {
         mbox->tail = 0;
     }
+    mutex_release(mbox->lock);
     end = sys_now();
     return (end - start);
 }
@@ -242,12 +253,13 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
     LWIP_ASSERT("mbox != SYS_MBOX_NULL", mbox != SYS_MBOX_NULL);
     LWIP_ASSERT("mbox->sem != NULL", mbox->sem != NULL);
     
-    //hacky, but timeout of 0 seems to sleep forever
+    mutex_acquire(mbox->lock, INFINITE);
     unsigned int aqrd = mutex_acquire(mbox->sem, 0);
     if (aqrd == 0) {
         if (msg != NULL) {
             *msg = NULL;
         }
+        mutex_release(mbox->lock);
         return SYS_MBOX_EMPTY;
     }
     if (msg != NULL) {
@@ -258,6 +270,7 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
     if (mbox->tail >= MAX_QUEUE_ENTRIES) {
         mbox->tail = 0;
     }
+    mutex_release(mbox->lock);
     return 0;
 }
 

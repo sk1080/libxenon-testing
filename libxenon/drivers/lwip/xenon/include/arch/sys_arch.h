@@ -65,6 +65,7 @@ typedef struct _sys_sem sys_sem_t;
 
 struct lwip_mbox {
   MUTEX *sem;
+  MUTEX *lock;
   void *q_mem[MAX_QUEUE_ENTRIES];
   u32_t head, tail;
 };
