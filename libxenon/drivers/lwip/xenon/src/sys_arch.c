@@ -234,7 +234,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
         return SYS_ARCH_TIMEOUT;
     }
     if (timeout > 0)
-    	timeout = timeout - (sys_now() - start)
+    	timeout = timeout - (sys_now() - start);
     aqrd = mutex_acquire(mbox->lock, timeout);
     if (aqrd == 0) {
 		if (msg != NULL) {
