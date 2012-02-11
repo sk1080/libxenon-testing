@@ -226,18 +226,24 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
     
     u32_t start, end;
     start = sys_now();
-    mutex_acquire(mbox->lock, INFINITE);
     unsigned int aqrd = mutex_acquire(mbox->sem, timeout);
     if (aqrd == 0) {
         if (msg != NULL) {
             *msg = NULL;
         }
-        mutex_release(mbox->lock);
         return SYS_ARCH_TIMEOUT;
     }
+    if (timeout > 0)
+    	timeout = timeout - (sys_now() - start)
+    aqrd = mutex_acquire(mbox->lock, timeout);
+    if (aqrd == 0) {
+		if (msg != NULL) {
+			*msg = NULL;
+		}
+		return SYS_ARCH_TIMEOUT;
+	}
     if (msg != NULL)
         *msg = mbox->q_mem[mbox->tail];
-    
     (mbox->tail)++;
     if (mbox->tail >= MAX_QUEUE_ENTRIES) {
         mbox->tail = 0;
@@ -253,7 +259,6 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
     LWIP_ASSERT("mbox != SYS_MBOX_NULL", mbox != SYS_MBOX_NULL);
     LWIP_ASSERT("mbox->sem != NULL", mbox->sem != NULL);
     
-    mutex_acquire(mbox->lock, INFINITE);
     unsigned int aqrd = mutex_acquire(mbox->sem, 0);
     if (aqrd == 0) {
         if (msg != NULL) {
@@ -262,6 +267,7 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
         mutex_release(mbox->lock);
         return SYS_MBOX_EMPTY;
     }
+    mutex_acquire(mbox->lock, INFINITE);
     if (msg != NULL) {
         *msg = mbox->q_mem[mbox->tail];
     }
