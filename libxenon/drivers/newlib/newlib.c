@@ -192,6 +192,16 @@ int fstat(int fildes, struct stat *buf)
 	}
 }
 
+int stat(const char * __restrict path, struct stat * __restrict buf) {
+    int fd = -1;
+    fd = open(path, O_RDONLY);
+
+    if (fd) {
+        return fstat(fd, buf);
+    }
+    return ENOENT; // file doesn't exist
+}
+
 int isatty(int fildes)
 {
 	struct vfs_file_s *file = is_valid_and_open_fd(fildes);
@@ -410,10 +420,10 @@ void _exit(int status)
 		vfs_console_write(NULL,s,strlen(s));
 		xenon_set_single_thread_mode();
 		
-                try_return_to_xell(0xc8070000,0x1c000000); // xell-gggggg (ggboot)
+		try_return_to_xell(0xc8070000,0x1c000000); // xell-gggggg (ggboot)
 		try_return_to_xell(0xc8095060,0x1c040000); // xell-2f (freeboot)
 		try_return_to_xell(0xc8100000,0x1c000000); // xell-1f, xell-ggggggg
-                try_return_to_xell(0xc80C0000,0x1c000000); 
+		try_return_to_xell(0xc80C0000,0x1c000000); 
 		try_return_to_xell(0xc80E0000,0x1c000000);
 		try_return_to_xell(0xc8B80000,0x1c000000);
 	}

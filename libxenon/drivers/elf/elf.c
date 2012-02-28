@@ -279,18 +279,18 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
 		printf(" ! /chosen node not found in devtree\n"); 
                 return;
         }
-        
+
         if (bootargs[0])
         {
                 res = fdt_setprop(ELF_DEVTREE_START, node, "bootargs", bootargs, strlen(bootargs)+1);
                 if (res < 0){
-        	printf(" ! couldn't set chosen.bootargs property\n"); 
-        	return;
+                printf(" ! couldn't set chosen.bootargs property\n"); 
+                return;
                 }
         }
 	
         if (initrd_start && initrd_size)
-	{
+        {
                 kernel_relocate_initrd(initrd_start,initrd_size);
                 
                 u64 start, end;
@@ -332,7 +332,8 @@ void elf_runWithDeviceTree (void *elf_addr, int elf_size, void *dt_addr, int dt_
 		printf(" ! fdt_pack() failed\n"); 
                 return;
         }
-
+	
+	memdcbst(ELF_DEVTREE_START,ELF_DEVTREE_MAX_SIZE);
 	printf(" * Device tree prepared\n"); 
 	
 	elf_runFromMemory(elf_addr,elf_size);
@@ -359,6 +360,7 @@ void kernel_relocate_initrd(void *start, size_t size)
         
         memset(INITRD_RELOC_START,0,INITRD_MAX_SIZE);
         memcpy(INITRD_RELOC_START,start,size);
+	memdcbst(INITRD_RELOC_START,INITRD_MAX_SIZE);
         
         initrd_start = INITRD_RELOC_START;
         initrd_size = size;

@@ -170,6 +170,7 @@ after_slb:
 	rfid
 
 b32:
+	bl c_register_frame
 	bl call_ctors
 	bl main
 
