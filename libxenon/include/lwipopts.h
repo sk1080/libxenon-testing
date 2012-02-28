@@ -50,6 +50,7 @@
 #define LWIP_NETCONN            1
 #define LWIP_NETIF_HOSTNAME     1
 #define LWIP_NETIF_API          1
+#define LWIP_SO_RCVTIMEO		1
 
 
 /* SETTINGS */

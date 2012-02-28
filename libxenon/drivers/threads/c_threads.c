@@ -373,6 +373,7 @@ PTHREAD thread_schedule_core()
     // Walk the thread list, find the first thread with the highest priority
     pthr = readyList.FirstThread;
     PTHREAD winThread = pthr;
+    pthr = pthr->NextThreadReady; //Avoid competing against itself in cases where that causes threads to get dropped
     do
     {
         if((pthr->Priority + pthr->PriorityBoost)
@@ -452,8 +453,7 @@ void thread_schedule(CONTEXT *context)
     PTHREAD pthr = thread_schedule_core();
     
     // This thread is the winner, check the priority boost
-    if(pthr->PriorityBoost)
-        pthr->PriorityBoost--;
+    pthr->PriorityBoost = 0;
     
     // Mark as current thread
     processor->CurrentThread = pthr;
@@ -797,7 +797,7 @@ void thread_set_processor(PTHREAD pthr, unsigned int processor)
 	unlock(&newProcess->Lock);
     }
     
-    unlock(oldProcess->Lock);
+    unlock(&oldProcess->Lock);
     thread_unlock(&ThreadListLock, irql);
     
     if(pthr == thread_get_current())
@@ -1031,7 +1031,7 @@ void process_set_quantum_length(unsigned int milliseconds)
 
 static int threading_init_check = 0;
 
-extern unsigned int wait[];
+extern volatile unsigned int wait[];
 unsigned int thread_idle_ipi(unsigned int context)
 {
     // Stop any interrupts from getting in
@@ -1065,16 +1065,12 @@ void threading_shutdown()
     if(threading_init_check == 0
             || thread_get_processor_block()->CurrentProcessor != 0)
         return;
-    
-    printf("Shutting down threads\n");
 
     thread_raise_irql(0x7C);
     thread_disable_interrupts();
-    printf("..");
 
     // Wait for pending ipis to clear
     lock(&ipi_lock);
-    printf("..");
     
     // Tell everyone to shut down
     unsigned int ipi_count = 0;
@@ -1082,7 +1078,6 @@ void threading_shutdown()
             0x3F & ~(1 << thread_get_processor_block()->CurrentProcessor),
             &ipi_count);
     
-    printf("..");
     // Wait for everyone to stop
     while(wait[2]);
     while(wait[4]);

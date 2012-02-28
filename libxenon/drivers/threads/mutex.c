@@ -45,6 +45,26 @@ void mutex_setlockcount(MUTEX *mutex, unsigned int lock_count)
     unlock(&mutex->Lock);
 }
 
+void mutex_sleep(unsigned int milliseconds, MUTEX *mutex) //Thread Sleep, although set sleep time under mutex lock, possibly avoids a timing issue
+{
+    PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
+    unsigned long long sleep_time = _millisecond_clock_time + milliseconds;
+
+    // Raise IRQ so we aren't rescheduled while setting this up
+    thread_raise_irql(2);
+    lock(&processor->Lock);
+
+    // Set our sleep time
+    processor->CurrentThread->SleepTime = sleep_time;
+
+    unlock(&mutex->Lock);
+    unlock(&processor->Lock);
+
+    // System call to signal thread swap
+    asm volatile("sc");
+}
+
+
 // Attempt to acquire the mutex (Timeout of INFINITE will wait forever)
 // 0 = timeout, 1 = acquired
 unsigned int mutex_acquire(MUTEX *mutex, int timeout)
@@ -58,6 +78,8 @@ unsigned int mutex_acquire(MUTEX *mutex, int timeout)
         // We own this mutex
         mutex->CurrentLockCount++;
         acquired = 1;
+        unlock(&mutex->Lock);
+        return 1;
     }
     else
     {
@@ -74,14 +96,9 @@ unsigned int mutex_acquire(MUTEX *mutex, int timeout)
         mutex->LastWaiting = pthr;
     }
     
-    unlock(&mutex->Lock);
-    
-    if(acquired)
-        return 1;
-    
     // Wait for the timeout
     thread_get_current()->WaitingForMutex = 1;
-    thread_sleep(timeout);
+    mutex_sleep(timeout, mutex);
     
     // Lock
     lock(&mutex->Lock);

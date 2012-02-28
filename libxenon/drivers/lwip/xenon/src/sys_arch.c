@@ -289,8 +289,9 @@ sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, 
     LWIP_UNUSED_ARG(prio);
     
     //create the actual thread
-    PTHREAD pthrd = thread_create(thread, stacksize, arg, prio);
+    PTHREAD pthrd = thread_create(thread, stacksize, arg, THREAD_FLAG_CREATE_SUSPENDED);
     LWIP_ASSERT("pthrd != NULL", pthrd != NULL);
+    //Another core can be set here, also, we should handle priority
     thread_resume(pthrd);
 
     return (sys_thread_t)pthrd;
