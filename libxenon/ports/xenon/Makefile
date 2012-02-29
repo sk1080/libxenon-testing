@@ -95,6 +95,7 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/lwip/api/api_msg.o \
 	../../drivers/lwip/api/err.o \
 	../../drivers/lwip/api/netbuf.o \
+	../../drivers/lwip/api/netdb.o \
 	../../drivers/lwip/api/netifapi.o \
 	../../drivers/lwip/api/sockets.o \
 	../../drivers/lwip/api/tcpip.o \
