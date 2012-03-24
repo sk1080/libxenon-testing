@@ -89,12 +89,12 @@ xenon_ata_wait_drq(struct xenon_ata_device *dev) {
 
 static inline void
 xenon_ata_wait_ready(struct xenon_ata_device *dev) {
-    while ((xenon_ata_regget(dev, XENON_ATA_REG_STATUS) & 0xC0)!=0x40);
+    while ((xenon_ata_regget(dev, XENON_ATA_REG_STATUS) & 0xC0) != 0x40);
 }
 
 static inline void
 xenon_ata_wait() {
-	mdelay(50);
+    mdelay(50);
 }
 
 static int
@@ -109,19 +109,19 @@ xenon_ata_pio_read(struct xenon_ata_device *dev, char *buf, int size) {
     xenon_ata_wait_drq(dev);
 
     /* Read in the data, word by word.  */
-	if (size&0xf){
-		for (i = 0; i < size / 4; i++)
-			buf32[i] = xenon_ata_read_data(dev, XENON_ATA_REG_DATA);
-	}else{
-		volatile uint32_t* reg_data=(volatile uint32_t*)(dev->ioaddress + XENON_ATA_REG_DATA);
-		for (i = 0; i < size / 16; ++i){
-			*buf32++ = *reg_data;
-			*buf32++ = *reg_data;
-			*buf32++ = *reg_data;
-			*buf32++ = *reg_data;
-		}
-	}
-		
+    if (size & 0xf) {
+        for (i = 0; i < size / 4; i++)
+            buf32[i] = xenon_ata_read_data(dev, XENON_ATA_REG_DATA);
+    } else {
+        volatile uint32_t* reg_data = (volatile uint32_t*)(dev->ioaddress + XENON_ATA_REG_DATA);
+        for (i = 0; i < size / 16; ++i) {
+            *buf32++ = *reg_data;
+            *buf32++ = *reg_data;
+            *buf32++ = *reg_data;
+            *buf32++ = *reg_data;
+        }
+    }
+
     if (xenon_ata_regget(dev, XENON_ATA_REG_STATUS) & 1)
         return xenon_ata_regget(dev, XENON_ATA_REG_ERROR);
 
@@ -148,91 +148,89 @@ xenon_ata_pio_write(struct xenon_ata_device *dev, char *buf, int size) {
 
 static int
 xenon_ata_dma_read(struct xenon_ata_device *dev, char *buf, int size) {
-	
-	assert(!((uint32_t)buf&3));
-	
-	uint32_t i,b;
-	int s,ss;
-	
-	if (xenon_ata_regget(dev, XENON_ATA_REG_STATUS) & 1)
+
+    assert(!((uint32_t) buf & 3));
+
+    uint32_t i, b;
+    int s, ss;
+
+    if (xenon_ata_regget(dev, XENON_ATA_REG_STATUS) & 1)
         return xenon_ata_regget(dev, XENON_ATA_REG_ERROR);
 
-//	printf("ATA DMA %p %d\n",buf,size);
+    //	printf("ATA DMA %p %d\n",buf,size);
 
-	/* build PRDs */
-	
-	i=0;
-	s=size;
-	b=((uint32_t)buf)&0x7fffffff;
-	while(s>0){
-		dev->prds[i].address=__builtin_bswap32(b);
-		
-		ss=MIN(s,0x10000-(b&0xffff)); // a PRD buffer mustn't cross a 64k boundary
-		s-=ss;
-		b+=ss;
-		
-		dev->prds[i].size_flags=__builtin_bswap32((ss&0xffff)|(s>0?0:0x80000000));
-		
-//		printf("PRD %08x %d\n",b,ss);
-		
-		++i;
-		if (i>=MAX_PRDS && s>0) {
-			printf("ATA DMA transfer too big\n");
-			return -1;
-		}
-	}
+    /* build PRDs */
 
-	memdcbst(dev->prds,MAX_PRDS*sizeof(struct xenon_ata_dma_prd));
+    i = 0;
+    s = size;
+    b = ((uint32_t) buf)&0x7fffffff;
+    while (s > 0) {
+        dev->prds[i].address = __builtin_bswap32(b);
 
-	/* setup DMA regs */
-	
-	xenon_ata_write_data2(dev,XENON_ATA_DMA_TABLE_OFS,__builtin_bswap32((uint32_t)dev->prds&0x7fffffff));
-	xenon_ata_regset2(dev,XENON_ATA_DMA_CMD,XENON_ATA_DMA_WR);
-	xenon_ata_regset2(dev,XENON_ATA_DMA_STATUS,0);
+        ss = MIN(s, 0x10000 - (b & 0xffff)); // a PRD buffer mustn't cross a 64k boundary
+        s -= ss;
+        b += ss;
 
-	/* flush buffer from cache */
-	
-	memdcbf(buf,size);
-	
-	/* start DMA */
-	
-	xenon_ata_regset2(dev,XENON_ATA_DMA_CMD,XENON_ATA_DMA_WR|XENON_ATA_DMA_START);
-	
-	/* wait for DMA end */
+        dev->prds[i].size_flags = __builtin_bswap32((ss & 0xffff) | (s > 0 ? 0 : 0x80000000));
 
-	while(xenon_ata_regget2(dev,XENON_ATA_DMA_STATUS)&XENON_ATA_DMA_ACTIVE);
+        //		printf("PRD %08x %d\n",b,ss);
 
-	/* stop DMA ctrlr */
+        ++i;
+        if (i >= MAX_PRDS && s > 0) {
+            printf("ATA DMA transfer too big\n");
+            return -1;
+        }
+    }
 
-	xenon_ata_regset2(dev,XENON_ATA_DMA_CMD,0);
-	
-	if (xenon_ata_regget2(dev,XENON_ATA_DMA_STATUS)&XENON_ATA_DMA_ERR){
-		printf("ATA DMA transfer error\n");
+    memdcbst(dev->prds, MAX_PRDS * sizeof (struct xenon_ata_dma_prd));
+
+    /* setup DMA regs */
+
+    xenon_ata_write_data2(dev, XENON_ATA_DMA_TABLE_OFS, __builtin_bswap32((uint32_t) dev->prds & 0x7fffffff));
+    xenon_ata_regset2(dev, XENON_ATA_DMA_CMD, XENON_ATA_DMA_WR);
+    xenon_ata_regset2(dev, XENON_ATA_DMA_STATUS, 0);
+
+    /* flush buffer from cache */
+
+    memdcbf(buf, size);
+
+    /* start DMA */
+
+    xenon_ata_regset2(dev, XENON_ATA_DMA_CMD, XENON_ATA_DMA_WR | XENON_ATA_DMA_START);
+
+    /* wait for DMA end */
+
+    while (xenon_ata_regget2(dev, XENON_ATA_DMA_STATUS) & XENON_ATA_DMA_ACTIVE);
+
+    /* stop DMA ctrlr */
+
+    xenon_ata_regset2(dev, XENON_ATA_DMA_CMD, 0);
+
+    if (xenon_ata_regget2(dev, XENON_ATA_DMA_STATUS) & XENON_ATA_DMA_ERR) {
+        printf("ATA DMA transfer error\n");
         return -1;
-	}
-	
-	if (xenon_ata_regget(dev, XENON_ATA_REG_STATUS) & 1)
+    }
+
+    if (xenon_ata_regget(dev, XENON_ATA_REG_STATUS) & 1)
         return xenon_ata_regget(dev, XENON_ATA_REG_ERROR);
 
-	/* reload buffer into cache */
-	
-	memdcbt(buf,size);
-	
-	return 0;
+    /* reload buffer into cache */
+
+    memdcbt(buf, size);
+
+    return 0;
 };
-
-
 
 static void
 xenon_ata_dumpinfo(struct xenon_ata_device *dev, char *info) {
     char text[41];
-	char data[0x80];
-	int i;
-	
-	for(i=0;i<sizeof(data);i+=2){
-		data[i]=info[i+1];
-		data[i+1]=info[i];
-	}
+    char data[0x80];
+    int i;
+
+    for (i = 0; i<sizeof (data); i += 2) {
+        data[i] = info[i + 1];
+        data[i + 1] = info[i];
+    }
 
     /* The device information was read, dump it for debugging.  */
     strncpy(text, data + 20, 20);
@@ -245,12 +243,12 @@ xenon_ata_dumpinfo(struct xenon_ata_device *dev, char *info) {
     text[40] = 0;
     printf("  * Model: %s\n", text);
 
-	if (!dev->atapi){
-		printf("  * Addressing mode: %d\n", dev->addressing_mode);
-		printf("  * #cylinders: %d\n", (int) dev->cylinders);
-		printf("  * #heads: %d\n", (int) dev->heads);
-		printf("  * #sectors: %d\n", (int) dev->size);
-	}
+    if (!dev->atapi) {
+        printf("  * Addressing mode: %d\n", dev->addressing_mode);
+        printf("  * #cylinders: %d\n", (int) dev->cylinders);
+        printf("  * #heads: %d\n", (int) dev->heads);
+        printf("  * #sectors: %d\n", (int) dev->size);
+    }
 }
 
 static void
@@ -321,17 +319,19 @@ xenon_ata_setaddress(struct xenon_ata_device *dev, int sector, int size) {
 }
 
 static int
-xenon_ata_read_sectors(struct bdev *bdev, void *buf, lba_t start_sector, int sector_size) {
-    struct xenon_ata_device *dev = bdev->ctx;
+//xenon_ata_read_sectors(struct bdev *bdev, void *buf, lba_t start_sector, int sector_size) {
+xenon_ata_read_sectors(lba_t start_sector, int sector_size, void *buf) {
+    //struct xenon_ata_device *dev = bdev->ctx;
+    struct xenon_ata_device *dev = &ata;
 
-    start_sector += bdev->offset;
+    //start_sector += bdev->offset;
 
     xenon_ata_setaddress(dev, start_sector, sector_size);
 
     /* Read sectors.  */
 #ifndef USE_DMA
-    unsigned int sect=0;
-	xenon_ata_regset(dev, XENON_ATA_REG_CMD, XENON_ATA_CMD_READ_SECTORS_EXT);
+    unsigned int sect = 0;
+    xenon_ata_regset(dev, XENON_ATA_REG_CMD, XENON_ATA_CMD_READ_SECTORS_EXT);
     xenon_ata_wait_ready(dev);
     for (sect = 0; sect < sector_size; sect++) {
         if (xenon_ata_pio_read(dev, buf, XENON_DISK_SECTOR_SIZE)) {
@@ -340,25 +340,27 @@ xenon_ata_read_sectors(struct bdev *bdev, void *buf, lba_t start_sector, int sec
         }
         buf += XENON_DISK_SECTOR_SIZE;
     }
-	return sect;
+    return sect;
 #else
-	xenon_ata_regset(dev, XENON_ATA_REG_CMD, XENON_ATA_CMD_READ_DMA_EXT);
+    xenon_ata_regset(dev, XENON_ATA_REG_CMD, XENON_ATA_CMD_READ_DMA_EXT);
     xenon_ata_wait_ready(dev);
 
-	if (xenon_ata_dma_read(dev, buf, sector_size*XENON_DISK_SECTOR_SIZE)) {
-		printf("ATA DMA read error\n");
-		return -1;
-	}
-	return sector_size;
+    if (xenon_ata_dma_read(dev, buf, sector_size * XENON_DISK_SECTOR_SIZE)) {
+        printf("ATA DMA read error\n");
+        return -1;
+    }
+    return sector_size;
 #endif
 }
 
 static int
-xenon_ata_write_sectors(struct bdev *bdev, const void *buf, lba_t start_sector, int sector_size) {
+//xenon_ata_write_sectors(struct bdev *bdev, const void *buf, lba_t start_sector, int sector_size) {
+xenon_ata_write_sectors(lba_t start_sector, int sector_size, const void *buf) {
     unsigned int sect;
-    struct xenon_ata_device *dev = bdev->ctx;
+//    struct xenon_ata_device *dev = bdev->ctx;
+    struct xenon_ata_device *dev = &ata;
 
-    start_sector += bdev->offset;
+    //start_sector += bdev->offset;
 
     xenon_ata_setaddress(dev, start_sector, sector_size);
 
@@ -366,7 +368,7 @@ xenon_ata_write_sectors(struct bdev *bdev, const void *buf, lba_t start_sector, 
     xenon_ata_regset(dev, XENON_ATA_REG_CMD, XENON_ATA_CMD_WRITE_SECTORS_EXT);
     xenon_ata_wait_ready(dev);
     for (sect = 0; sect < sector_size; sect++) {
-        if (xenon_ata_pio_write(dev, (void *)buf, XENON_DISK_SECTOR_SIZE)) {
+        if (xenon_ata_pio_write(dev, (void *) buf, XENON_DISK_SECTOR_SIZE)) {
             printf("ATA write error\n");
             return -1;
         }
@@ -387,7 +389,7 @@ xenon_atapi_identify(struct xenon_ata_device *dev) {
             XENON_ATA_CMD_IDENTIFY_PACKET_DEVICE);
     xenon_ata_wait_ready(dev);
 
-    xenon_ata_pio_read(dev, info, sizeof(info));
+    xenon_ata_pio_read(dev, info, sizeof (info));
 
     dev->atapi = 1;
 
@@ -398,9 +400,9 @@ xenon_atapi_identify(struct xenon_ata_device *dev) {
 
 static int
 xenon_atapi_packet(struct xenon_ata_device *dev, char *packet, int dma) {
-	
-	xenon_ata_regset(dev, XENON_ATA_REG_DISK, 0);
-    xenon_ata_regset(dev, XENON_ATA_REG_FEATURES, dma?1:0);
+
+    xenon_ata_regset(dev, XENON_ATA_REG_DISK, 0);
+    xenon_ata_regset(dev, XENON_ATA_REG_FEATURES, dma ? 1 : 0);
     xenon_ata_regset(dev, XENON_ATA_REG_SECTORS, 0);
     xenon_ata_regset(dev, XENON_ATA_REG_LBAHIGH, 0xff);
     xenon_ata_regset(dev, XENON_ATA_REG_LBAMID, 0xff);
@@ -417,202 +419,198 @@ xenon_atapi_packet(struct xenon_ata_device *dev, char *packet, int dma) {
 #define ASCQ(sense)((sense>>0)  & 0xFF)
 
 int
-xenon_atapi_request_sense(struct xenon_ata_device *dev)
-{
-	char cdb[12] = {0x03,0x00,0x00,0x00,0x00,0x00,
-	                0x00,0x00,0x00,0x00,0x00,0x00};
-	char buf[24];
-	memset(buf,0,sizeof(buf));
+xenon_atapi_request_sense(struct xenon_ata_device *dev) {
+    char cdb[12] = {0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    char buf[24];
+    memset(buf, 0, sizeof (buf));
 
-	cdb[4] = sizeof(buf);
+    cdb[4] = sizeof (buf);
 
-	xenon_atapi_packet(dev, cdb, 0);
-	xenon_ata_wait_ready(dev);
-	if (xenon_ata_pio_read(dev,buf,sizeof(buf))){
-		printf("ATAPI request sense failed\n");
-		return -1;
-	};
-	
-	return (buf[2] << 16) | (buf[12] << 8) | buf[13];
+    xenon_atapi_packet(dev, cdb, 0);
+    xenon_ata_wait_ready(dev);
+    if (xenon_ata_pio_read(dev, buf, sizeof (buf))) {
+        printf("ATAPI request sense failed\n");
+        return -1;
+    };
+
+    return (buf[2] << 16) | (buf[12] << 8) | buf[13];
 }
 
 static int
 xenon_atapi_inquiry_model(struct xenon_ata_device *dev) {
-	
-	char cdb[12] = {0x12,0x00,0x00,0x00,0x24,0xC0,
-			        0x00,0x00,0x00,0x00,0x00,0x00};
-	char buf[0x24];
-	memset(buf,0,sizeof(buf));
 
-	xenon_atapi_packet(dev,cdb,0);
-	xenon_ata_wait_ready(dev);
-	if (xenon_ata_pio_read(dev,buf,sizeof(buf))){
-		printf("ATAPI inquiry failed\n");
-		return -1;
-	};
-	
-	buf[8+24] = '\0';
-	printf("ATAPI inquiry model: %s\n",&buf[8]);
-	
-	return 0;
+    char cdb[12] = {0x12, 0x00, 0x00, 0x00, 0x24, 0xC0,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    char buf[0x24];
+    memset(buf, 0, sizeof (buf));
+
+    xenon_atapi_packet(dev, cdb, 0);
+    xenon_ata_wait_ready(dev);
+    if (xenon_ata_pio_read(dev, buf, sizeof (buf))) {
+        printf("ATAPI inquiry failed\n");
+        return -1;
+    };
+
+    buf[8 + 24] = '\0';
+    printf("ATAPI inquiry model: %s\n", &buf[8]);
+
+    return 0;
 }
 
 void
-xenon_atapi_set_modeb(void)
-{
-	struct xenon_ata_device *dev = &atapi;
-	
-	char buf[0x30];
-	memset(buf,0,sizeof(buf));
+xenon_atapi_set_modeb(void) {
+    struct xenon_ata_device *dev = &atapi;
 
-	char cdb[12] = {0xE7,0x48,0x49,0x54,0x30,0x90,
-					0x90,0xd0,0x01,0x00,0x00,0x00};
+    char buf[0x30];
+    memset(buf, 0, sizeof (buf));
 
-	xenon_atapi_packet(dev,cdb,0);
-	xenon_ata_wait_ready(dev);
-	if (xenon_ata_pio_read(dev,buf,sizeof(buf))){
-		printf("DVD set mode b failed\n");
-	}
-}
+    char cdb[12] = {0xE7, 0x48, 0x49, 0x54, 0x30, 0x90,
+        0x90, 0xd0, 0x01, 0x00, 0x00, 0x00};
 
-
-int
-xenon_atapi_get_dvd_key_tsh943a(unsigned char *dvdkey)
-{
-	struct xenon_ata_device *dev = &atapi;
-	
-	// create mode page buffer
-	char buf[0x10];
-	memset(buf,0,sizeof(buf));
-
-	char cdb[12] = {0xFF,0x08,0x05,0x00,0x05,0x01,
-	                0x03,0x00,0x04,0x07,0x00,0x00};
-	
-	xenon_atapi_packet(dev,cdb,0);
-	xenon_ata_wait_ready(dev);
-	if (xenon_ata_pio_read(dev,buf,sizeof(buf))){
-		int sense = xenon_atapi_request_sense(dev);
-		printf("DVD drive key read failed with sense: %06x\n", sense);
-		return -1;
-	};
-	
-	memcpy(dvdkey,buf,0x10);
-	return 0;
+    xenon_atapi_packet(dev, cdb, 0);
+    xenon_ata_wait_ready(dev);
+    if (xenon_ata_pio_read(dev, buf, sizeof (buf))) {
+        printf("DVD set mode b failed\n");
+    }
 }
 
 int
-xenon_atapi_set_dvd_key(unsigned char *dvdkey)
-{
-	struct xenon_ata_device *dev = &atapi;
+xenon_atapi_get_dvd_key_tsh943a(unsigned char *dvdkey) {
+    struct xenon_ata_device *dev = &atapi;
 
-	// create mode page buffer
-	char buf[0x3A];
-	memset(buf,0,0x3A);
+    // create mode page buffer
+    char buf[0x10];
+    memset(buf, 0, sizeof (buf));
 
-	// Mode parameter header(mode select 10) start
-	buf[0] = 0x00; // MODE DATA LENGTH MSB
-	buf[1] = 0x38; // MODE DATA LENGTH LSB
-	// Mode parameter header(mode select 10) end
-	buf[8] = 0xBB; // mode page code (vendor specific, page format required)
-	buf[9] = 0x30; // page length (16 bytes drive key + 32 bytes 0x00 following after mode page code)
+    char cdb[12] = {0xFF, 0x08, 0x05, 0x00, 0x05, 0x01,
+        0x03, 0x00, 0x04, 0x07, 0x00, 0x00};
 
-	// set drive key in mode page to 0xFF
-	memset(buf + 0x0A,0xFF,0x10);
+    xenon_atapi_packet(dev, cdb, 0);
+    xenon_ata_wait_ready(dev);
+    if (xenon_ata_pio_read(dev, buf, sizeof (buf))) {
+        int sense = xenon_atapi_request_sense(dev);
+        printf("DVD drive key read failed with sense: %06x\n", sense);
+        return -1;
+    };
 
-	char cdb[12] = {0x55,0x00,0x00,0x00,0x00,0x00,
-			                 0x00,0x00,0x3A,0x00,0x00,0x00};
+    memcpy(dvdkey, buf, 0x10);
+    return 0;
+}
+
+int
+xenon_atapi_set_dvd_key(unsigned char *dvdkey) {
+    struct xenon_ata_device *dev = &atapi;
+
+    // create mode page buffer
+    char buf[0x3A];
+    memset(buf, 0, 0x3A);
+
+    // Mode parameter header(mode select 10) start
+    buf[0] = 0x00; // MODE DATA LENGTH MSB
+    buf[1] = 0x38; // MODE DATA LENGTH LSB
+    // Mode parameter header(mode select 10) end
+    buf[8] = 0xBB; // mode page code (vendor specific, page format required)
+    buf[9] = 0x30; // page length (16 bytes drive key + 32 bytes 0x00 following after mode page code)
+
+    // set drive key in mode page to 0xFF
+    memset(buf + 0x0A, 0xFF, 0x10);
+
+    char cdb[12] = {0x55, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x3A, 0x00, 0x00, 0x00};
 
 
-	xenon_atapi_packet(dev,cdb,0);
-	xenon_ata_wait_ready(dev);
-	if (xenon_ata_pio_write(dev,buf,sizeof(buf))){
-		int sense = xenon_atapi_request_sense(dev);
-		printf(" ! DVD drive key erase failed with sense: %06x\n", sense);
-		return -1;
-	};
-	
-	//set the key into the buffer
-	memcpy(buf + 0x0A,dvdkey,0x10);
+    xenon_atapi_packet(dev, cdb, 0);
+    xenon_ata_wait_ready(dev);
+    if (xenon_ata_pio_write(dev, buf, sizeof (buf))) {
+        int sense = xenon_atapi_request_sense(dev);
+        printf(" ! DVD drive key erase failed with sense: %06x\n", sense);
+        return -1;
+    };
 
-	xenon_atapi_packet(dev,cdb,0);
-	xenon_ata_wait_ready(dev);
-	if (xenon_ata_pio_write(dev,buf,sizeof(buf))){
-		int sense = xenon_atapi_request_sense(dev);
-		printf("DVD drive key set failed with sense: %06x\n", sense);
-		return -1;
-	};
-	
-	return 0;
+    //set the key into the buffer
+    memcpy(buf + 0x0A, dvdkey, 0x10);
+
+    xenon_atapi_packet(dev, cdb, 0);
+    xenon_ata_wait_ready(dev);
+    if (xenon_ata_pio_write(dev, buf, sizeof (buf))) {
+        int sense = xenon_atapi_request_sense(dev);
+        printf("DVD drive key set failed with sense: %06x\n", sense);
+        return -1;
+    };
+
+    return 0;
 }
 
 static int
-xenon_atapi_read_sectors(struct bdev *bdev,
-        void *buf, lba_t start_sector, int sector_size) {
-	int maxretries = 20;	
-    struct xenon_ata_device *dev = bdev->ctx;
+//xenon_atapi_read_sectors(struct bdev *bdev, void *buf, lba_t start_sector, int sector_size) {
+xenon_atapi_read_sectors(lba_t start_sector, int sector_size,void *buf) {
+    int maxretries = 20;
+    //struct xenon_ata_device *dev = bdev->ctx;
+    struct xenon_ata_device *dev = &atapi;
     struct xenon_atapi_read readcmd;
 
     readcmd.code = 0x28;
     readcmd.lba = start_sector;
     readcmd.length = sector_size;
-	
-//	printf("xenon_atapi_read_sectors %p %d %d\n",buf,(unsigned int)start_sector,sector_size);
+
+    //	printf("xenon_atapi_read_sectors %p %d %d\n",buf,(unsigned int)start_sector,sector_size);
 
 #ifndef USE_DMA
-    unsigned int sect=0;
-	void * bufpos=buf;
+    unsigned int sect = 0;
+    void * bufpos = buf;
 retry:
-    xenon_atapi_packet(dev, (char *) &readcmd,0);
+    xenon_atapi_packet(dev, (char *) &readcmd, 0);
     xenon_ata_wait_ready(dev);
     for (sect = 0; sect < sector_size; sect++) {
         if (xenon_ata_pio_read(dev, bufpos, XENON_CDROM_SECTOR_SIZE)) {
-			int sense = xenon_atapi_request_sense(dev);
-			
-			// no media
-			if (SK(sense)==0x02 && ASC(sense)==0x3a){
-				return DISKIO_ERROR_NO_MEDIA;
-			}
+            int sense = xenon_atapi_request_sense(dev);
 
-			// becoming ready
-			if ((SK(sense)==0x02 && ASC(sense)==0x4) || SK(sense)==0x6){
-				if (!maxretries) return -1;
-				mdelay(500);
-				maxretries--;
-				goto retry;
-			}
-			
-			printf("ATAPI read error\n");
+            // no media
+            if (SK(sense) == 0x02 && ASC(sense) == 0x3a) {
+                return DISKIO_ERROR_NO_MEDIA;
+            }
+
+            // becoming ready
+            if ((SK(sense) == 0x02 && ASC(sense) == 0x4) || SK(sense) == 0x6) {
+                if (!maxretries) return -1;
+                mdelay(500);
+                maxretries--;
+                goto retry;
+            }
+
+            printf("ATAPI read error\n");
             return -1;
         }
         bufpos += XENON_CDROM_SECTOR_SIZE;
     }
 #else
 retry:
-	xenon_atapi_packet(dev, (char *) &readcmd,1);
-	xenon_ata_wait_ready(dev);
+    xenon_atapi_packet(dev, (char *) &readcmd, 1);
+    xenon_ata_wait_ready(dev);
 
-	if (xenon_ata_dma_read(dev, buf, sector_size*XENON_CDROM_SECTOR_SIZE)) {
-		int sense = xenon_atapi_request_sense(dev);
+    if (xenon_ata_dma_read(dev, buf, sector_size * XENON_CDROM_SECTOR_SIZE)) {
+        int sense = xenon_atapi_request_sense(dev);
 
-		// no media
-		if (SK(sense)==0x02 && ASC(sense)==0x3a){
-			return DISKIO_ERROR_NO_MEDIA;
-		}
+        // no media
+        if (SK(sense) == 0x02 && ASC(sense) == 0x3a) {
+            return DISKIO_ERROR_NO_MEDIA;
+        }
 
-		// becoming ready
-		if ((SK(sense)==0x02 && ASC(sense)==0x4) || SK(sense)==0x6){
-			if (!maxretries) return -1;
-			mdelay(500);
-			maxretries--;
-			goto retry;
-		}
+        // becoming ready
+        if ((SK(sense) == 0x02 && ASC(sense) == 0x4) || SK(sense) == 0x6) {
+            if (!maxretries) return -1;
+            mdelay(500);
+            maxretries--;
+            goto retry;
+        }
 
-		printf("ATAPI DMA read error\n");
-		return -1;
-	}
+        printf("ATAPI DMA read error\n");
+        return -1;
+    }
 #endif
 
-	return sector_size;
+    return sector_size;
 }
 
 static int
@@ -667,8 +665,8 @@ xenon_ata_init1(struct xenon_ata_device *dev, uint32_t ioaddress, uint32_t ioadd
     memset(dev, 0, sizeof (struct xenon_ata_device));
     dev->ioaddress = ioaddress;
     dev->ioaddress2 = ioaddress2;
-	
-	dev->prds = memalign(0x10000,MAX_PRDS*sizeof(struct xenon_ata_dma_prd));
+
+    dev->prds = memalign(0x10000, MAX_PRDS * sizeof (struct xenon_ata_dma_prd));
 
     /* Try to detect if the port is in use by writing to it,
        waiting for a while and reading it again.  If the value
@@ -682,7 +680,7 @@ xenon_ata_init1(struct xenon_ata_device *dev, uint32_t ioaddress, uint32_t ioadd
         return -1;
     }
 
-	/* Issue a reset.  */
+    /* Issue a reset.  */
     xenon_ata_regset2(dev, XENON_ATA_REG2_CONTROL, 6);
     xenon_ata_wait();
     xenon_ata_regset2(dev, XENON_ATA_REG2_CONTROL, 2);
@@ -691,21 +689,60 @@ xenon_ata_init1(struct xenon_ata_device *dev, uint32_t ioaddress, uint32_t ioadd
     xenon_ata_regget2(dev, XENON_ATA_REG2_CONTROL);
     xenon_ata_regget2(dev, XENON_ATA_REG2_CONTROL);
 
-	xenon_ata_regset(dev, XENON_ATA_REG_DISK, 0);
+    xenon_ata_regset(dev, XENON_ATA_REG_DISK, 0);
     xenon_ata_regget2(dev, XENON_ATA_REG2_CONTROL);
     xenon_ata_regget2(dev, XENON_ATA_REG2_CONTROL);
     xenon_ata_regget2(dev, XENON_ATA_REG2_CONTROL);
     xenon_ata_regget2(dev, XENON_ATA_REG2_CONTROL);
-	
+
     printf("SATA device at %08lx\n", dev->ioaddress);
     xenon_ata_identify(dev);
-	
-	return 0;
+
+    return 0;
 }
 
-struct bdev_ops xenon_ata_ops ={
+static int ATA_True(void)
+{
+	return true;
+}
+
+static int ata_ready = 0;
+static int atapi_ready = 0;
+
+static int ata_inserted(){
+    return ata_ready;
+}
+
+static int atapi_inserted(){
+    return atapi_ready;
+}
+
+DISC_INTERFACE xenon_ata_ops={
+    .readSectors = (FN_MEDIUM_READSECTORS)&xenon_ata_read_sectors,
+    .writeSectors = (FN_MEDIUM_WRITESECTORS)&xenon_ata_write_sectors,
+    .clearStatus = (FN_MEDIUM_CLEARSTATUS)&ATA_True,
+    .shutdown = (FN_MEDIUM_SHUTDOWN)&ATA_True,
+    .isInserted = (FN_MEDIUM_ISINSERTED)&ata_inserted,
+    .startup = (FN_MEDIUM_STARTUP)&ATA_True,
+    .ioType = FEATURE_XENON_ATA,
+    .features = FEATURE_MEDIUM_CANREAD | FEATURE_MEDIUM_CANWRITE | FEATURE_XENON_ATA,
+};
+
+DISC_INTERFACE xenon_atapi_ops={
+    .readSectors = (FN_MEDIUM_READSECTORS)&xenon_atapi_read_sectors,
+    .clearStatus = (FN_MEDIUM_CLEARSTATUS)&ATA_True,
+    .shutdown = (FN_MEDIUM_SHUTDOWN)&ATA_True,
+    .isInserted = (FN_MEDIUM_ISINSERTED)&ATA_True,
+    .startup = (FN_MEDIUM_STARTUP)&atapi_inserted,
+    .ioType = FEATURE_XENON_ATAPI,
+    .features = FEATURE_MEDIUM_CANREAD | FEATURE_XENON_ATAPI,
+};
+
+/*
+struct bdev_ops xenon_ata_ops = {
     .read = xenon_ata_read_sectors, .write = xenon_ata_write_sectors
 };
+*/
 
 int
 xenon_ata_init() {
@@ -713,30 +750,37 @@ xenon_ata_init() {
     *(volatile uint32_t*)0xd0110060 = __builtin_bswap32(0x112400);
     *(volatile uint32_t*)0xd0110080 = __builtin_bswap32(0x407231BE);
     *(volatile uint32_t*)0xea001318 &= __builtin_bswap32(0xFFFFFFF0);
-	mdelay(1000);
-    
-	struct xenon_ata_device *dev = &ata;
+    mdelay(1000);
+
+    struct xenon_ata_device *dev = &ata;
     memset(dev, 0, sizeof (struct xenon_ata_device));
     int err = xenon_ata_init1(dev, 0xea001300, 0xea001320);
-    if (!err) dev->bdev = register_bdev(dev, &xenon_ata_ops, "sda");
+    if (!err)
+        //dev->bdev = register_bdev(dev, &xenon_ata_ops, "sda");
+        ata_ready=1;
     return err;
 }
 
-struct bdev_ops xenon_atapi_ops ={
+/*
+struct bdev_ops xenon_atapi_ops = {
     .read = xenon_atapi_read_sectors
 };
+*/
 
 int
 xenon_atapi_init() {
     //preinit (start from scratch)
-	*(volatile uint32_t*)0xd0108060 = __builtin_bswap32(0x112400);
-	*(volatile uint32_t*)0xd0108080 = __builtin_bswap32(0x407231BE);
-	*(volatile uint32_t*)0xea001218 &= __builtin_bswap32(0xFFFFFFF0);
-	mdelay(200);
-	
-	struct xenon_ata_device *dev = &atapi;
-	memset(dev, 0, sizeof (struct xenon_ata_device));
+    *(volatile uint32_t*)0xd0108060 = __builtin_bswap32(0x112400);
+    *(volatile uint32_t*)0xd0108080 = __builtin_bswap32(0x407231BE);
+    *(volatile uint32_t*)0xea001218 &= __builtin_bswap32(0xFFFFFFF0);
+    mdelay(200);
+
+    struct xenon_ata_device *dev = &atapi;
+    memset(dev, 0, sizeof (struct xenon_ata_device));
     int err = xenon_ata_init1(dev, 0xea001200, 0xea001220);
-    if (!err) dev->bdev = register_bdev(dev, &xenon_atapi_ops, "dvd");
+    if (!err)
+        //dev->bdev = register_bdev(dev, &xenon_atapi_ops, "dvd");
+        //register_disc_interface(&atapi_ops);
+        atapi_ready=1;
     return err;
 }

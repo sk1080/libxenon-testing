@@ -1,3 +1,4 @@
+#if 0
 #include <diskio/diskio.h>
 #include <string.h>
 #include <stdio.h>
@@ -41,16 +42,16 @@ struct bdev *register_bdev(void *ctx, struct bdev_ops *ops, const char *name)
 	devices[i].ops = ops;
 
 	printf("registered new device: %s\n", name);
-	
+
 	struct bdev *bdev = devices + i;
 
 	char mountpoint[18];
 	snprintf(mountpoint, 18, "%s:", name);
 	struct vfs_mountop_s *vfs_ops = determine_filesystem(bdev);
-	
+
 	struct mount_s *m = mount(mountpoint, vfs_ops, bdev);
 	bdev->mount = m;
-	
+
 	return bdev;
 }
 
@@ -91,3 +92,4 @@ int bdev_enum(int handle, const char **name)
 
     return handle;
 }
+#endif

@@ -30,7 +30,7 @@ CFLAGS = -g -mcpu=cell -mtune=cell -Os \
 LIBDIR32 = $(DEVKITXENON)/xenon/lib/32/
 
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti -fpermissive -Wno-sign-compare -Werror=int-to-pointer-cast \
-	-Werror=pointer-to-int-cast -Wno-unknown-pragmas  -Wno-unused-value -Wno-unused-variable 
+	-Werror=pointer-to-int-cast -Wno-unknown-pragmas  -Wno-unused-value -Wno-unused-variable
 
 AFLAGS = -Iinclude -m32 $(INCLUDES)
 
@@ -39,16 +39,9 @@ LIBOBJS = crti.o crtn.o \
 	../../startup/xenon/crt1.o \
 	../../drivers/console/console.o \
 	../../drivers/console/telnet_console.o \
-	../../drivers/diskio/diskio.o \
-	../../drivers/diskio/disk_rb.o \
-	../../drivers/diskio/ata.o \
-	../../drivers/fat/fat.o \
-	../../drivers/fat/fat_rb.o \
-	../../drivers/fat/file_rb.o \
-	../../drivers/fat/dir_rb.o \
-	../../drivers/iso9660/iso9660.o \
 	../../drivers/input/input.o \
 	../../drivers/newlib/newlib.o \
+	../../drivers/diskio/ata.o \
 	../../drivers/nocfe/lib_malloc.o \
 	../../drivers/nocfe/lib_queue.o \
 	../../drivers/pci/io.o \
@@ -150,8 +143,9 @@ install: libxenon.a
 	mkdir -p $(DEVKITXENON)/usr/lib/
 	cp libxenon.a $(DEVKITXENON)/usr/lib/
 	mkdir -p $(DEVKITXENON)/usr/include/
+	mkdir -p $(DEVKITXENON)/usr/include/sys
 	cp -r ../../drivers/* $(DEVKITXENON)/usr/include/
-	cp ../../include/* $(DEVKITXENON)/usr/include/
+	cp -r ../../include/* $(DEVKITXENON)/usr/include/
 	mkdir -p $(DEVKITXENON)/usr/include/lwip/
 	cp ../../drivers/lwip/include/lwip/* $(DEVKITXENON)/usr/include/lwip/
 	cp ../../drivers/lwip/include/$(LWIP_MODE)/lwip/* $(DEVKITXENON)/usr/include/lwip/
@@ -160,5 +154,5 @@ install: libxenon.a
 	mkdir -p $(DEVKITXENON)/usr/include/arch/
 	cp ../../drivers/lwip/xenon/include/arch/* $(DEVKITXENON)/usr/include/arch/
 	mkdir -p $(DEVKITXENON)/usr/include/sys/
-	cp ../../drivers/newlib/dirent.h $(DEVKITXENON)/usr/include/sys/
+#	cp ../../drivers/newlib/dirent.h $(DEVKITXENON)/usr/include/sys/
 	find $(DEVKITXENON)/usr/include/ -type f \! -name "*.h" -delete

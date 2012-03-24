@@ -41,9 +41,14 @@ typedef double f64;
 typedef volatile float vf32;
 typedef volatile double vf64;
 /*+----------------------------------------------------------------------------------------------+*/
-
+typedef unsigned long long lba_t;
 
 typedef unsigned int BOOL;
+#ifndef __cplusplus
+typedef unsigned int bool;
+#define false 0
+#define true 1
+#endif
 /*+----------------------------------------------------------------------------------------------+*/
 // alias type typedefs
 #define FIXED s32					///< Alias type for sfp32

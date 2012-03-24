@@ -11,7 +11,7 @@ extern "C" {
 #define MAXDD    64
 
 #define DISKIO_ERROR_NO_MEDIA -8
-	
+
 typedef unsigned long long lba_t;
 
 struct bdev;
