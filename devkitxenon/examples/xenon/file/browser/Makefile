@@ -33,7 +33,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,--gc-sections -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lxenon -lm
+LIBS	:=	-lntfs -lfat -lxenon -lm 
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -124,7 +124,7 @@ endif
 #source/ffs_content.c: genffs.py data/ps.psu data/vs.vsu
 #	python genffs.py > source/ffs_content.c
 
+
 run: $(BUILD) $(OUTPUT).elf32
-	cp $(OUTPUT).elf32 /tftpboot/xenon
-	$(PREFIX)strip /tftpboot/xenon
-#	/home/dev360/run
+	cp $(OUTPUT).elf32 /var/lib/tftpboot/tftpboot/xenon
+	$(PREFIX)strip /var/lib/tftpboot/tftpboot/xenon

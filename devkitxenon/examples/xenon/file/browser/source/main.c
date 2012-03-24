@@ -16,6 +16,9 @@
 #include <elf/elf.h>
 #include <dirent.h>
 
+#include <libntfs/ntfs.h>
+#include <libfat/fat.h>
+
 #define FG_COL -1
 #define BG_COL 0
 
@@ -25,6 +28,9 @@
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define MIN(a,b) (((a)<(b))?(a):(b))
+
+
+
 
 struct dirent entries[MAX_FILES];
 int entrycount=0;
@@ -73,6 +79,7 @@ void append_dir_to_path(char * path,char * dir){
 }
 
 int main(){
+printf("Main !!\r\n");
 	const char * s;
 	char path[256];
 	
@@ -82,15 +89,23 @@ int main(){
 
 	xenos_init(VIDEO_MODE_AUTO);
 	console_init();
-
-	xenon_make_it_faster(XENON_SPEED_FULL);
+		xenon_make_it_faster(XENON_SPEED_FULL);
 	
 	usb_init();
 	usb_do_poll();
 	
 	xenon_ata_init();
+	
+	
 
 	dvd_init();
+	
+	printf("register ntfs\r\n");
+	ntfs_md * _ntfs_dev;
+	//ntfsMountAll(&_ntfs_dev,NTFS_READ_ONLY);
+	fatInitDefault ();
+	
+	printf("register ntfs ok\r\n");
 
 	handle=-1;
     handle=bdev_enum(handle,&s);
