@@ -84,7 +84,7 @@ $(BUILD):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr wii_debug wii_release cube_debug cube_release $(LIBDIR)
+	@rm -fr wii_debug wii_release cube_debug cube_release xenon_release xenon_debug $(LIBDIR)
 
 all: $(NTFSBIN)
 

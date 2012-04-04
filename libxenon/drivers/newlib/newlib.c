@@ -28,11 +28,11 @@ void *sbrk(ptrdiff_t incr) {
     return res;
 }
 void (*stdout_hook)(const char *text, int len) = 0;
+
 /**
  * Fake vfs
  */
-ssize_t vfs_console_write(struct _reent *r, int fd, const char *src, size_t len)
-{
+ssize_t vfs_console_write(struct _reent *r, int fd, const char *src, size_t len) {
     if (stdout_hook)
         stdout_hook(src, len);
     size_t i;
@@ -182,12 +182,12 @@ void _exit(int status) {
     int i, stuck = 0;
 
     sprintf(s, "[Exit] with code %d\n", status);
-    vfs_console_write(NULL,0, s, strlen(s));
+    vfs_console_write(NULL, 0, s, strlen(s));
 
     for (i = 0; i < 6; ++i) {
         if (xenon_is_thread_task_running(i)) {
             sprintf(s, "Thread %d is still running !\n", i);
-            vfs_console_write(NULL,0, s, strlen(s));
+            vfs_console_write(NULL, 0, s, strlen(s));
             stuck = 1;
         }
     }
@@ -196,10 +196,10 @@ void _exit(int status) {
 
     if (stuck) {
         sprintf(s, "Can't reload Xell, looping...");
-        vfs_console_write(NULL,0, s, strlen(s));
+        vfs_console_write(NULL, 0, s, strlen(s));
     } else {
         sprintf(s, "Reloading Xell...");
-        vfs_console_write(NULL,0, s, strlen(s));
+        vfs_console_write(NULL, 0, s, strlen(s));
         xenon_set_single_thread_mode();
 
         try_return_to_xell(0xc8070000, 0x1c000000); // xell-gggggg (ggboot)
@@ -212,13 +212,13 @@ void _exit(int status) {
 //---------------------------------------------------------------------------------
 
 void abort(void) {
-    vfs_console_write(NULL,0, "Abort called.\n", sizeof ("Abort called.\n") - 1);
+    vfs_console_write(NULL, 0, "Abort called.\n", sizeof ("Abort called.\n") - 1);
     _exit(1);
 }
 //---------------------------------------------------------------------------------
 
 int
-_DEFUN(_execve, (name, argv, env),
+_DEFUN(execve, (name, argv, env),
         char *name _AND
         char **argv _AND
         char **env) {
@@ -230,7 +230,7 @@ _DEFUN(_execve, (name, argv, env),
 //---------------------------------------------------------------------------------
 
 int
-_DEFUN(_fork, (),
+_DEFUN(fork, (),
         _NOARGS) {
     struct _reent *r = _REENT;
     r->_errno = ENOSYS;
@@ -238,13 +238,22 @@ _DEFUN(_fork, (),
 }
 //---------------------------------------------------------------------------------
 
-int _DEFUN(_getpid, (),
+int _DEFUN(getpid, (),
         _NOARGS) {
     struct _reent *ptr = _REENT;
     ptr->_errno = ENOSYS;
     return -1;
 }
 //---------------------------------------------------------------------------------
+
+int
+_DEFUN(getrusage, (who, usage),
+        int who _AND
+        struct rusage *usage) {
+    struct _reent *ptr = _REENT;
+    ptr->_errno = ENOSYS;
+    return -1;
+}
 
 int
 _DEFUN(gettimeofday, (ptimeval, ptimezone),
@@ -282,7 +291,7 @@ _DEFUN(wait, (status),
     r->_errno = ENOSYS;
     return -1;
 }
-*/
+ */
 
 /**
  * User etc ..
@@ -290,9 +299,8 @@ _DEFUN(wait, (status),
 #define ROOT_UID 0
 #define ROOT_GID 0
 
-uid_t getuid(void)
-{
-  return ROOT_UID;
+uid_t getuid(void) {
+    return ROOT_UID;
 }
 
 uid_t geteuid(void) {
@@ -315,28 +323,26 @@ int setgid(gid_t gid) {
     return (gid == ROOT_GID ? 0 : -1);
 }
 
-pid_t getpid(void) {
-    return 0;
-}
-
 pid_t getppid(void) {
     return 0;
 }
 
-void *getpwuid(uid_t uid){
+void *getpwuid(uid_t uid) {
     TR
     return NULL;
 }
-void *getpwnam(const char *name){
+
+void *getpwnam(const char *name) {
     TR
     return NULL;
 };
 
-void *getgrnam (const char *name){
+void *getgrnam(const char *name) {
     TR
     return NULL;
 };
-void *getgrgid (gid_t gid){
+
+void *getgrgid(gid_t gid) {
     TR
     return NULL;
 };

@@ -1,0 +1,1741 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="79">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <df name="libxenon" root="Z:/xenon/share/libxenon_experimental/libxenon">
+      <df name="drivers">
+        <df name="console">
+          <in>console.c</in>
+          <in>console.h</in>
+          <in>font_8x16.h</in>
+          <in>telnet_console.c</in>
+          <in>telnet_console.h</in>
+        </df>
+        <df name="diskio">
+          <in>ata.c</in>
+          <in>ata.h</in>
+          <in>disc_io.h</in>
+        </df>
+        <df name="elf">
+          <in>elf.c</in>
+          <in>elf.h</in>
+          <in>elf_abi.h</in>
+          <in>elf_run.S</in>
+        </df>
+        <df name="input">
+          <in>input.c</in>
+          <in>input.h</in>
+        </df>
+        <df name="libfdt">
+          <in>fdt.c</in>
+          <in>fdt.h</in>
+          <in>fdt_ro.c</in>
+          <in>fdt_rw.c</in>
+          <in>fdt_strerror.c</in>
+          <in>fdt_sw.c</in>
+          <in>fdt_wip.c</in>
+          <in>libfdt.h</in>
+          <in>libfdt_env.h</in>
+          <in>libfdt_internal.h</in>
+        </df>
+        <df name="lwip">
+          <df name="api">
+            <in>api_lib.c</in>
+            <in>api_msg.c</in>
+            <in>err.c</in>
+            <in>netbuf.c</in>
+            <in>netdb.c</in>
+            <in>netifapi.c</in>
+            <in>sockets.c</in>
+            <in>tcpip.c</in>
+          </df>
+          <df name="core">
+            <df name="ipv4">
+              <in>autoip.c</in>
+              <in>icmp.c</in>
+              <in>igmp.c</in>
+              <in>inet.c</in>
+              <in>inet_chksum.c</in>
+              <in>ip.c</in>
+              <in>ip_addr.c</in>
+              <in>ip_frag.c</in>
+            </df>
+            <df name="ipv6">
+              <in>icmp6.c</in>
+              <in>inet6.c</in>
+              <in>ip6.c</in>
+              <in>ip6_addr.c</in>
+            </df>
+            <df name="snmp">
+              <in>asn1_dec.c</in>
+              <in>asn1_enc.c</in>
+              <in>mib2.c</in>
+              <in>mib_structs.c</in>
+              <in>msg_in.c</in>
+              <in>msg_out.c</in>
+            </df>
+            <in>def.c</in>
+            <in>dhcp.c</in>
+            <in>dns.c</in>
+            <in>init.c</in>
+            <in>mem.c</in>
+            <in>memp.c</in>
+            <in>netif.c</in>
+            <in>pbuf.c</in>
+            <in>raw.c</in>
+            <in>stats.c</in>
+            <in>sys.c</in>
+            <in>tcp.c</in>
+            <in>tcp_in.c</in>
+            <in>tcp_out.c</in>
+            <in>timers.c</in>
+            <in>udp.c</in>
+          </df>
+          <df name="include">
+            <df name="ipv4">
+              <df name="lwip">
+                <in>autoip.h</in>
+                <in>icmp.h</in>
+                <in>igmp.h</in>
+                <in>inet.h</in>
+                <in>inet_chksum.h</in>
+                <in>ip.h</in>
+                <in>ip_addr.h</in>
+                <in>ip_frag.h</in>
+              </df>
+            </df>
+            <df name="ipv6">
+              <df name="lwip">
+                <in>icmp.h</in>
+                <in>inet.h</in>
+                <in>ip.h</in>
+                <in>ip_addr.h</in>
+              </df>
+            </df>
+            <df name="lwip">
+              <in>api.h</in>
+              <in>api_msg.h</in>
+              <in>arch.h</in>
+              <in>debug.h</in>
+              <in>def.h</in>
+              <in>dhcp.h</in>
+              <in>dns.h</in>
+              <in>err.h</in>
+              <in>init.h</in>
+              <in>mem.h</in>
+              <in>memp.h</in>
+              <in>memp_std.h</in>
+              <in>netbuf.h</in>
+              <in>netdb.h</in>
+              <in>netif.h</in>
+              <in>netifapi.h</in>
+              <in>opt.h</in>
+              <in>pbuf.h</in>
+              <in>raw.h</in>
+              <in>sio.h</in>
+              <in>snmp.h</in>
+              <in>snmp_asn1.h</in>
+              <in>snmp_msg.h</in>
+              <in>snmp_structs.h</in>
+              <in>sockets.h</in>
+              <in>stats.h</in>
+              <in>sys.h</in>
+              <in>tcp.h</in>
+              <in>tcp_impl.h</in>
+              <in>tcpip.h</in>
+              <in>timers.h</in>
+              <in>udp.h</in>
+            </df>
+            <df name="netif">
+              <in>etharp.h</in>
+              <in>loopif.h</in>
+              <in>ppp_oe.h</in>
+              <in>slipif.h</in>
+            </df>
+          </df>
+          <df name="netif">
+            <df name="ppp">
+              <in>auth.c</in>
+              <in>auth.h</in>
+              <in>chap.c</in>
+              <in>chap.h</in>
+              <in>chpms.c</in>
+              <in>chpms.h</in>
+              <in>fsm.c</in>
+              <in>fsm.h</in>
+              <in>ipcp.c</in>
+              <in>ipcp.h</in>
+              <in>lcp.c</in>
+              <in>lcp.h</in>
+              <in>magic.c</in>
+              <in>magic.h</in>
+              <in>md5.c</in>
+              <in>md5.h</in>
+              <in>pap.c</in>
+              <in>pap.h</in>
+              <in>ppp.c</in>
+              <in>ppp.h</in>
+              <in>ppp_oe.c</in>
+              <in>pppdebug.h</in>
+              <in>randm.c</in>
+              <in>randm.h</in>
+              <in>vj.c</in>
+              <in>vj.h</in>
+              <in>vjbsdhdr.h</in>
+            </df>
+            <in>etharp.c</in>
+            <in>ethernetif.c</in>
+            <in>loopif.c</in>
+            <in>slipif.c</in>
+          </df>
+          <df name="xenon">
+            <df name="include">
+              <df name="arch">
+                <in>cc.h</in>
+                <in>cpu.h</in>
+                <in>init.h</in>
+                <in>lib.h</in>
+                <in>perf.h</in>
+                <in>sys_arch.h</in>
+              </df>
+            </df>
+            <df name="netif">
+              <in>enet.c</in>
+            </df>
+            <df name="src">
+              <in>lib.c</in>
+              <in>perf.c</in>
+              <in>sys_arch.c</in>
+            </df>
+          </df>
+        </df>
+        <df name="network">
+          <in>network.c</in>
+          <in>network.h</in>
+        </df>
+        <df name="newlib">
+          <in>newlib.c</in>
+        </df>
+        <df name="nocfe">
+          <in>cfe.h</in>
+          <in>lib_malloc.c</in>
+          <in>lib_malloc.h</in>
+          <in>lib_queue.c</in>
+          <in>lib_queue.h</in>
+          <in>lib_types.h</in>
+        </df>
+        <df name="pci">
+          <in>io.c</in>
+          <in>io.h</in>
+        </df>
+        <df name="ppc">
+          <in>atomic.S</in>
+          <in>atomic.h</in>
+          <in>c_except.c</in>
+          <in>cache.S</in>
+          <in>cache.h</in>
+          <in>except.S</in>
+          <in>register.h</in>
+          <in>timebase.h</in>
+          <in>vm.c</in>
+          <in>vm.h</in>
+          <in>xenonsprs.h</in>
+        </df>
+        <df name="time">
+          <in>time.c</in>
+          <in>time.h</in>
+        </df>
+        <df name="usb">
+          <df name="tinyehci">
+            <in>ehci-mem.c</in>
+            <in>ehci.c</in>
+            <in>ehci.h</in>
+            <in>ehci_defs.h</in>
+            <in>ehci_types.h</in>
+            <in>tinyehci.c</in>
+            <in>tinyehci.h</in>
+            <in>usb.h</in>
+            <in>usb2.c</in>
+            <in>usb_os.c</in>
+            <in>usbstorage.c</in>
+            <in>usbstorage.h</in>
+          </df>
+          <in>dev_usb_asix.c</in>
+          <in>dev_usb_catc.c</in>
+          <in>dev_usb_klsi.c</in>
+          <in>dev_usb_pegasus.c</in>
+          <in>dev_usb_rtek.c</in>
+          <in>klsi_fw.h</in>
+          <in>ohci.c</in>
+          <in>ohci.h</in>
+          <in>usbchap9.h</in>
+          <in>usbctrl.c</in>
+          <in>usbd.c</in>
+          <in>usbd.h</in>
+          <in>usbdebug.c</in>
+          <in>usbdevs.c</in>
+          <in>usbeth.c</in>
+          <in>usbeth.h</in>
+          <in>usbhack.c</in>
+          <in>usbhack.h</in>
+          <in>usbhid.c</in>
+          <in>usbhub.c</in>
+          <in>usbmain.c</in>
+          <in>usbmain.h</in>
+          <in>usbmass.c</in>
+          <in>usbserial.c</in>
+        </df>
+        <df name="utils">
+          <in>debug.c</in>
+          <in>gmon.c</in>
+          <in>gmon.h</in>
+          <in>unicode_rb.c</in>
+          <in>unicode_rb.h</in>
+        </df>
+        <df name="xenon_nand">
+          <in>xenon_config.c</in>
+          <in>xenon_config.h</in>
+          <in>xenon_sfcx.c</in>
+          <in>xenon_sfcx.h</in>
+        </df>
+        <df name="xenon_smc">
+          <in>xenon_gpio.c</in>
+          <in>xenon_gpio.h</in>
+          <in>xenon_smc.c</in>
+          <in>xenon_smc.h</in>
+        </df>
+        <df name="xenon_soc">
+          <in>cpusleep.S</in>
+          <in>xenon_io.h</in>
+          <in>xenon_power.c</in>
+          <in>xenon_power.h</in>
+          <in>xenon_secotp.c</in>
+          <in>xenon_secotp.h</in>
+        </df>
+        <df name="xenon_sound">
+          <in>sound.c</in>
+          <in>sound.h</in>
+        </df>
+        <df name="xenon_uart">
+          <in>xenon_uart.c</in>
+          <in>xenon_uart.h</in>
+        </df>
+        <df name="xenos">
+          <in>edram.c</in>
+          <in>edram.h</in>
+          <in>ucode.c</in>
+          <in>xe.c</in>
+          <in>xe.h</in>
+          <in>xe_internal.h</in>
+          <in>xenos.c</in>
+          <in>xenos.h</in>
+          <in>xenos_edid.c</in>
+          <in>xenos_edid.h</in>
+        </df>
+      </df>
+      <df name="include">
+        <df name="machine">
+          <df name="powerpc">
+            <df name="machine">
+              <in>_types.h</in>
+            </df>
+            <df name="sys">
+              <in>lock.h</in>
+              <in>stdio.h</in>
+            </df>
+          </df>
+        </df>
+        <df name="sys">
+          <in>dirent.h</in>
+          <in>iosupport.h</in>
+          <in>statvfs.h</in>
+        </df>
+        <in>byteswap.h</in>
+        <in>cache.h</in>
+        <in>debug.h</in>
+        <in>lwipopts.h</in>
+        <in>xetypes.h</in>
+      </df>
+      <df name="ports">
+        <df name="bzip2">
+        </df>
+        <df name="freetype">
+        </df>
+        <df name="libpng">
+        </df>
+        <df name="xenon">
+          <in>bin2s.c</in>
+          <in>crt0.s</in>
+          <in>crt1.s</in>
+          <in>crti.s</in>
+          <in>crtn.s</in>
+        </df>
+      </df>
+      <df name="startup">
+        <df name="xenon">
+          <in>crt1.c</in>
+          <in>startup_from_xell.S</in>
+        </df>
+      </df>
+      <df name="toolchain">
+      </df>
+    </df>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Z:/xenon/share/libxenon_experimental/libxenon/ports/xenon/Makefile</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
+  <sourceRootList>
+    <Elem>Z:/xenon/share/libxenon_experimental/libxenon</Elem>
+  </sourceRootList>
+  <projectmakefile>Z:/xenon/share/libxenon_experimental/libxenon/ports/xenon/Makefile</projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>default</compilerSet>
+      </toolsSet>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>Z:/xenon/share/libxenon_experimental/libxenon/ports/xenon</buildCommandWorkingDir>
+          <buildCommand>${MAKE} -f Makefile libxenon.a install</buildCommand>
+          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
+          <executablePath></executablePath>
+          <cTool>
+            <incDir>
+              <pElem>/home/cc/vbshare/libxenon_experimental/libxenon/ports/xenon</pElem>
+              <pElem>C:/home/cc/vbshare/libxenon_experimental/libxenon/drivers/libsys</pElem>
+            </incDir>
+          </cTool>
+        </makeTool>
+      </makefileType>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/console/console.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/console/console.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/console/font_8x16.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/console/telnet_console.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/console/telnet_console.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/diskio/ata.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/diskio/ata.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/elf/elf.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/elf/elf.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/elf/elf_abi.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/elf/elf_run.S"
+            ex="true"
+            tool="4"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/input/input.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/input/input.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/libfdt/fdt.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/libfdt/fdt.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/libfdt/fdt_ro.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/libfdt/fdt_rw.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/libfdt/fdt_strerror.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/libfdt/fdt_sw.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/libfdt/fdt_wip.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/libfdt/libfdt.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/libfdt/libfdt_env.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/libfdt/libfdt_internal.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/api/api_lib.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/api/api_msg.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/api/err.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/api/netbuf.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/api/netdb.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/api/netifapi.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/api/sockets.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/api/tcpip.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/def.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/dhcp.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/dns.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/init.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv4/autoip.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv4/icmp.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv4/igmp.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv4/inet.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv4/inet_chksum.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv4/ip.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv4/ip_addr.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv4/ip_frag.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv6/icmp6.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv6/inet6.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv6/ip6.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/ipv6/ip6_addr.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/mem.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/memp.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/netif.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/pbuf.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/raw.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/snmp/asn1_dec.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/snmp/asn1_enc.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/snmp/mib2.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/snmp/mib_structs.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/snmp/msg_in.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/snmp/msg_out.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/stats.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/sys.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/tcp.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/tcp_in.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/tcp_out.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/timers.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/core/udp.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv4/lwip/autoip.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv4/lwip/icmp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv4/lwip/igmp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv4/lwip/inet.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv4/lwip/inet_chksum.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv4/lwip/ip.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv4/lwip/ip_addr.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv4/lwip/ip_frag.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv6/lwip/icmp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv6/lwip/inet.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv6/lwip/ip.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/ipv6/lwip/ip_addr.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/api.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/api_msg.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/arch.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/debug.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/def.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/dhcp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/dns.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/err.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/init.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/mem.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/memp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/memp_std.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/netbuf.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/netdb.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/netif.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/netifapi.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/opt.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/pbuf.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/raw.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/sio.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/snmp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/snmp_asn1.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/snmp_msg.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/snmp_structs.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/sockets.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/stats.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/sys.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/tcp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/tcp_impl.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/tcpip.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/timers.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/lwip/udp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/netif/etharp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/netif/loopif.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/netif/ppp_oe.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/include/netif/slipif.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/etharp.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ethernetif.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/loopif.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/auth.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/auth.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/chap.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/chap.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/chpms.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/chpms.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/fsm.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/fsm.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/ipcp.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/ipcp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/lcp.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/lcp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/magic.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/magic.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/md5.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/md5.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/pap.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/pap.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/ppp.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/ppp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/ppp_oe.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/pppdebug.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/randm.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/randm.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/vj.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/vj.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/ppp/vjbsdhdr.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/netif/slipif.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/xenon/include/arch/cc.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/xenon/include/arch/cpu.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/xenon/include/arch/init.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/xenon/include/arch/lib.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/xenon/include/arch/perf.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/xenon/include/arch/sys_arch.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/xenon/netif/enet.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/xenon/src/lib.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/xenon/src/perf.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/lwip/xenon/src/sys_arch.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/network/network.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/network/network.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/newlib/newlib.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/nocfe/cfe.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/nocfe/lib_malloc.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/nocfe/lib_malloc.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/nocfe/lib_queue.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/nocfe/lib_queue.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/nocfe/lib_types.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/pci/io.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/pci/io.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/ppc/atomic.S"
+            ex="true"
+            tool="4"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/ppc/atomic.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/ppc/c_except.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/ppc/cache.S"
+            ex="true"
+            tool="4"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/ppc/cache.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/ppc/except.S"
+            ex="true"
+            tool="4"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/ppc/register.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/ppc/timebase.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/ppc/vm.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/ppc/vm.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/ppc/xenonsprs.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/time/time.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/time/time.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/dev_usb_asix.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/dev_usb_catc.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/dev_usb_klsi.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/dev_usb_pegasus.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/dev_usb_rtek.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/klsi_fw.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/ohci.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/ohci.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/ehci-mem.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/ehci.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/ehci.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/ehci_defs.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/ehci_types.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/tinyehci.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/tinyehci.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/usb.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/usb2.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/usb_os.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/usbstorage.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/tinyehci/usbstorage.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbchap9.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbctrl.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbd.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbd.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbdebug.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbdevs.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbeth.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbeth.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbhack.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbhack.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbhid.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbhub.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbmain.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbmain.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbmass.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/usb/usbserial.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/utils/debug.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/utils/gmon.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/utils/gmon.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/utils/unicode_rb.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/utils/unicode_rb.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_nand/xenon_config.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_nand/xenon_config.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_nand/xenon_sfcx.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_nand/xenon_sfcx.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_smc/xenon_gpio.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_smc/xenon_gpio.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_smc/xenon_smc.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_smc/xenon_smc.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_soc/cpusleep.S"
+            ex="true"
+            tool="4"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_soc/xenon_io.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_soc/xenon_power.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_soc/xenon_power.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_soc/xenon_secotp.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_soc/xenon_secotp.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_sound/sound.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_sound/sound.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_uart/xenon_uart.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenon_uart/xenon_uart.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenos/edram.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenos/edram.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenos/ucode.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenos/xe.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenos/xe.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenos/xe_internal.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenos/xenos.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenos/xenos.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenos/xenos_edid.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/drivers/xenos/xenos_edid.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/include/byteswap.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/include/cache.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/include/debug.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/include/lwipopts.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/include/machine/powerpc/machine/_types.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/include/machine/powerpc/sys/lock.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/include/machine/powerpc/sys/stdio.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/include/sys/dirent.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/include/sys/iosupport.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/include/sys/statvfs.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/include/xetypes.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/ports/xenon/bin2s.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/ports/xenon/crt0.s"
+            ex="true"
+            tool="4"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/ports/xenon/crt1.s"
+            ex="true"
+            tool="4"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/ports/xenon/crti.s"
+            ex="true"
+            tool="4"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/ports/xenon/crtn.s"
+            ex="true"
+            tool="4"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/startup/xenon/crt1.c"
+            ex="true"
+            tool="0"
+            flavor="0">
+      </item>
+      <item path="Z:/xenon/share/libxenon_experimental/libxenon/startup/xenon/startup_from_xell.S"
+            ex="true"
+            tool="4"
+            flavor="0">
+      </item>
+    </conf>
+  </confs>
+</configurationDescriptor>

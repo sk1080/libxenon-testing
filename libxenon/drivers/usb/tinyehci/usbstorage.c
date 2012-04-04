@@ -29,7 +29,6 @@ distribution.
 -------------------------------------------------------------*/
 
 #include "xetypes.h"
-//#include "diskio/diskio.h"
 #include "diskio/disc_io.h"
 
 #define s_printf printf

@@ -1,12 +1,12 @@
 
-default: cube-release wii-release xenon-release
+default: xenon-release
 
 #all: debug release
-all: xenon-debug
+all: xenon-release
 
 debug: cube-debug wii-debug xenon-debug
 
-release: cube-release wii-release xenon-release 
+release: xenon-release 
 
 xenon-debug:
 	$(MAKE) -C source PLATFORM=xenon BUILD=xenon_debug
@@ -18,7 +18,7 @@ wii-debug:
 	$(MAKE) -C source  PLATFORM=wii BUILD=wii_debug
 
 xenon-release:
-	$(MAKE) -C source  PLATFORM=xenon BUILD=xenon_release	
+	$(MAKE) -C source  PLATFORM=xenon BUILD=xenon_release
 	
 cube-release:
 	$(MAKE) -C source  PLATFORM=cube BUILD=cube_release
@@ -29,7 +29,7 @@ wii-release:
 clean: 
 	$(MAKE) -C source clean
 
-install: cube-release wii-release xenon-release
+install: xenon-release
 	$(MAKE) -C source install
 
 run: install

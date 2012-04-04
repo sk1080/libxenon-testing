@@ -1,4 +1,8 @@
 *.o
+*.d
+*.elf
+*.elf32
+*.tar.*
 nbproject/*
 toolchain/build.log
 libxenon/ports/xenon/libxenon.a
@@ -125,3 +129,9 @@ libxenon/ports/xenon/libxenon.a
 /fs/ntfs/source/cube_release/xattrs.d
 /fs/ntfs/source/wii_release/xattrs.d
 /fs/ntfs/source/xenon_release/xattrs.d
+/devkitxenon/examples/xenon/file/browser/build/*
+/devkitxenon/examples/xenon/graphics/cube/build/*
+/devkitxenon/examples/xenon/file/browser/browser.elf32
+/devkitxenon/examples/xenon/file/browser/browser.elf
+/devkitxenon/examples/xenon/graphics/cube/cube.elf
+/devkitxenon/examples/xenon/graphics/cube/cube.elf32
