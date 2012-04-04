@@ -6,7 +6,6 @@
 #include <xenon_uart/xenon_uart.h>
 #include <xenon_smc/xenon_smc.h>
 #include <ppc/cache.h>
-#include <newlib/vfs.h>
 #include <threads/threads.h>
 #include <threads/debug.h>
 #include <ppc/atomic.h>
