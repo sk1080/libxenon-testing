@@ -32,6 +32,7 @@
 #include "font_8x16.h"
 #include "console.h"
 #include <xenos/xenos.h>
+#include <ppc/atomic.h>
 
 static int console_width, console_height,
     console_size;
@@ -182,13 +183,21 @@ void console_init(void) {
 }
 
 void console_set_colors(unsigned int background, unsigned int foreground){
-	console_color[0]=background;
-	console_color[1]=foreground;
+	if (background > -1)
+            console_color[0]=background;
+	if (foreground > -1)
+            console_color[1]=foreground;
 }
 
 void console_get_dimensions(unsigned int * width,unsigned int * height){
 	if (width) *width=max_x;
 	if (height) *height=max_y;
+}
+
+unsigned int console_get_color(int num){
+	if (num < 0 || num > 1)
+		return 0;
+    return console_color[num];
 }
 
 void console_close(void)
