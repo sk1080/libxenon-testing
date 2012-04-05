@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <threads/mutex.h>
+#include <debug.h>
 
 char processor_blocks[0x1000 * 6] = {0}; // Per-Processor Core Data Block
 char processor_fpu_vpu_blocks[sizeof(PROCESSOR_FPU_VPU_SAVE) * 6] = {0};
@@ -301,7 +302,9 @@ PTHREAD thread_schedule_core()
         if((pthr->ThreadTerminated == 1) && (pthr->HandleOpen == 0))
         {
             // Free the stack
+			TR;
             free(pthr->StackBase);
+			TR;
             // Remove from list
             pthr->NextThread->PreviousThread = pthr->PreviousThread;
             pthr->PreviousThread->NextThread = pthr->NextThread;
@@ -691,18 +694,20 @@ PTHREAD thread_create(void* entrypoint, unsigned int stack_size,
 {
     PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
     PTHREAD pthr = NULL;
-    
-    // Lock the processor
-    int irql = thread_spinlock(&processor->Lock);
-    
+	char * stack = NULL;
+	int irql;
+        
     // Round up to nearest 4kb, min 16kb
     if(stack_size < 16*1024)
         stack_size = 16*1024;
     if(stack_size & 0x3FF)
         stack_size = (stack_size & 0xFFFFFC00) + 0x1000;
-    
-    char * stack = (char*)malloc(stack_size);
-    
+	
+    stack = (char*)malloc(stack_size);
+	
+	// Lock the processor
+    irql = thread_spinlock(&processor->Lock);
+	
     if(stack != NULL)
     {
         // Get a thread object
