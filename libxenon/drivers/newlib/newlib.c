@@ -16,18 +16,8 @@
 
 #define MAXPATHLEN 2048
 
-extern unsigned char heap_begin;
-unsigned char *heap_ptr;
-
-void *sbrk(ptrdiff_t incr) {
-    unsigned char *res;
-    if (!heap_ptr)
-        heap_ptr = &heap_begin;
-    res = heap_ptr;
-    heap_ptr += incr;
-    return res;
-}
 void (*stdout_hook)(const char *text, int len) = 0;
+
 
 /**
  * Fake vfs
@@ -68,46 +58,10 @@ const devoptab_t console_optab = {
     NULL, // deviceData;
 };
 
-// 22 nov 2005
-#define	RTC_BASE	1132614024UL//1005782400UL
-
-static int xenon_gettimeofday(void * unused, struct timeval * tp, void * tzp) {
-    unsigned char msg[16] = {0x04};
-    unsigned long long msec;
-    unsigned long sec;
-
-    xenon_smc_send_message(msg);
-    xenon_smc_receive_response(msg);
-
-    msec = msg[1] | (msg[2] << 8) | (msg[3] << 16) | (msg[4] << 24) | ((unsigned long long) msg[5] << 32);
-
-    sec = msec / 1000;
-    tp->tv_sec = sec + RTC_BASE;
-    msec -= sec * 1000;
-    tp->tv_usec = msec * 1000;
-
-    return 0;
-}
-
 
 /*
  * System stuff
  */
-
-//---------------------------------------------------------------------------------
-__syscalls_t __syscalls = {
-    //---------------------------------------------------------------------------------
-    NULL, // sbrk
-    NULL, // lock_init
-    NULL, // lock_close
-    NULL, // lock_release
-    NULL, // lock_acquire
-    NULL, // malloc_lock
-    NULL, // malloc_unlock
-    NULL, // exit
-    xenon_gettimeofday // gettod_r
-};
-
 int __libc_lock_init(int *lock, int recursive) {
 
     if (__syscalls.lock_init) {
@@ -158,57 +112,28 @@ void __malloc_unlock(struct _reent *ptr) {
     }
 }
 
-extern void enet_quiesce();
-extern void usb_shutdown(void);
-
-void shutdown_drivers() {
-    // some drivers require a shutdown
-    enet_quiesce();
-    usb_shutdown();
-}
-
-extern void return_to_xell(unsigned int nand_addr, unsigned int phy_loading_addr);
-#define XELL_FOOTER_OFFSET (256*1024-16)
-#define XELL_FOOTER_LENGTH 16
-#define XELL_FOOTER "xxxxxxxxxxxxxxxx"
-
-void try_return_to_xell(unsigned int nand_addr, unsigned int phy_loading_addr) {
-    if (!memcmp((void*) (nand_addr + XELL_FOOTER_OFFSET), XELL_FOOTER, XELL_FOOTER_LENGTH))
-        return_to_xell(nand_addr, phy_loading_addr);
-}
-
-void _exit(int status) {
-    char s[256];
-    int i, stuck = 0;
-
-    sprintf(s, "[Exit] with code %d\n", status);
-    vfs_console_write(NULL, 0, s, strlen(s));
-
-    for (i = 0; i < 6; ++i) {
-        if (xenon_is_thread_task_running(i)) {
-            sprintf(s, "Thread %d is still running !\n", i);
-            vfs_console_write(NULL, 0, s, strlen(s));
-            stuck = 1;
-        }
+void _exit(int status)
+{
+	if (__syscalls.exit) {
+        __syscalls.exit(status);
     }
-
-    shutdown_drivers();
-
-    if (stuck) {
-        sprintf(s, "Can't reload Xell, looping...");
-        vfs_console_write(NULL, 0, s, strlen(s));
-    } else {
-        sprintf(s, "Reloading Xell...");
-        vfs_console_write(NULL, 0, s, strlen(s));
-        xenon_set_single_thread_mode();
-
-        try_return_to_xell(0xc8070000, 0x1c000000); // xell-gggggg (ggboot)
-        try_return_to_xell(0xc8095060, 0x1c040000); // xell-2f (freeboot)
-        try_return_to_xell(0xc8100000, 0x1c000000); // xell-1f, xell-ggggggg
-    }
-
-    for (;;);
+	else{
+		while(1);
+	}
 }
+
+caddr_t sbrk(ptrdiff_t incr)
+{
+	struct _reent *ptr = _REENT;
+	if (__syscalls.sbrk_r) {
+        return __syscalls.sbrk_r(ptr, incr);
+    }
+	else{
+		ptr->_errno = ENOMEM;
+		return (caddr_t) -1;
+	}
+}
+
 //---------------------------------------------------------------------------------
 
 void abort(void) {

@@ -45,6 +45,7 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/console/telnet_console.o \
 	../../drivers/input/input.o \
 	../../drivers/newlib/newlib.o \
+	../../drivers/newlib/xenon_syscalls.o \
 	../../drivers/diskio/ata.o \
 	../../drivers/nocfe/lib_malloc.o \
 	../../drivers/nocfe/lib_queue.o \
@@ -129,6 +130,7 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/threads/c_debug.o \
 	../../drivers/threads/gdb.o \
 	../../drivers/threads/mutex.o \
+	../../drivers/threads/cond.o \
 	../../drivers/libfdt/fdt_ro.o \
 	../../drivers/libfdt/fdt_rw.o \
 	../../drivers/libfdt/fdt_strerror.o \

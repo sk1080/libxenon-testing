@@ -34,8 +34,8 @@
 #include <xenos/xenos.h>
 #include <ppc/atomic.h>
 
-static int console_width, console_height,
-    console_size;
+static int console_initialized = 0;
+static int console_width, console_height, console_size;
 
 /* Colors in BGRA: background and foreground */
 uint32_t console_color[2] = { 0x00000000, 0xFFA0A000 };
@@ -148,13 +148,21 @@ void console_putch(const char c) {
 
 static void console_stdout_hook(const char *buf, int len)
 {
-	while (len--)
-		console_putch(*buf++);
+	if(console_initialized)
+		while (len--)
+			console_putch(*buf++);
 }
 
+// newlib.c
 extern void (*stdout_hook)(const char *buf, int len);
 
 void console_init(void) {
+	console_initialized = 0;
+	if(!xenos_is_initialized()){
+		printf("You must initialize video before calling 'console_init'.\n");
+		return;
+	}
+	
 	struct ati_info *ai = (struct ati_info*)0xec806100ULL;
 
 	console_fb = (unsigned char*)(long)(ai->base | 0x80000000);
@@ -180,6 +188,12 @@ void console_init(void) {
 
 	printf(" * Xenos FB with %dx%d (%dx%d) at %p initialized.\n",
 		max_x, max_y, ai->width, ai->height, console_fb);
+	
+	console_initialized = 1;
+}
+
+int console_is_initialized(){
+	return console_initialized;
 }
 
 void console_set_colors(unsigned int background, unsigned int foreground){

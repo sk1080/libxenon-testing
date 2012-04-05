@@ -61,77 +61,83 @@ static void _cpu_print_stack(void *pc,void *lr,void *r1)
 static void flush_console()
 {
 	char * p=text;
-	while(*p){
-		putch(*p);
-		console_putch(*p++);
+	while(*p)
+		putch(*p++);
+	
+	if(console_is_initialized()){
+		p=text;
+		while(*p)
+			console_putch(*p++);
 	}
-
+	
 	text[0]='\0';
 }
 
 void crashdump(u32 exception,u64 * context)
 {
-	console_set_colors(0x000080ff, 0xffffffff);
-	console_init();
-	console_clrscr();
+	if(console_is_initialized()){
+		console_set_colors(0x000080ff, 0xffffffff);
+		console_init();
+		console_clrscr();
+	}
         
-        switch(exception)
-        {
-            case 0x200:
-                strcpy(text,"\nMachine Check!\n\n");
-                break;
-            case 0x380:
-                strcpy(text,"\nData SegFault!\n\n");
-                break;
-            case 0x480:
-                strcpy(text,"\nInstruction SegFault!\n\n");
-                break;
-            case 0x500:
-                strcpy(text,"\nExternal Interrupt!\n\n");
-                break;
-            case 0x600:
-                strcpy(text,"\nAlignment!\n\n");
-                break;
-            case 0x700:
-                strcpy(text,"\nProgram Interrupt!\n\n");
-                break;
-            case 0x800:
-                strcpy(text,"\nFPU Unavailable!\n\n");
-                break;
-            case 0x900:
-                strcpy(text,"\nDecrementer!\n\n");
-                break;
-            case 0x980:
-                strcpy(text,"\nHV Decrementer!\n\n");
-                break;
-            case 0xC00:
-                strcpy(text,"\nSystem Call!\n\n");
-                break;
-            case 0xD00:
-                strcpy(text,"\nTrace!\n\n");
-                break;
-            case 0xE00:
-                strcpy(text,"\nFPU Assist!\n\n");
-                break;
-            case 0xF20:
-                strcpy(text,"\nVPU Unavailable!\n\n");
-                break;
-            case 0x1600:
-                strcpy(text,"\nMaintenance!\n\n");
-                break;
-            case 0x1700:
-                strcpy(text,"\nVMX Assist!\n\n");
-                break;
-            case 0x1800:
-                strcpy(text,"\nThermal Managment!\n\n");
-                break;
-            case 0:
-                strcpy(text,"\nSegmentation Fault!\n\n");
-                break;
-            default:
-                sprintf(text,"\nException Vector! (%p)\n\n",exception);
-                break;
-        }
+	switch(exception)
+	{
+		case 0x200:
+			strcpy(text,"\nMachine Check!\n\n");
+			break;
+		case 0x380:
+			strcpy(text,"\nData SegFault!\n\n");
+			break;
+		case 0x480:
+			strcpy(text,"\nInstruction SegFault!\n\n");
+			break;
+		case 0x500:
+			strcpy(text,"\nExternal Interrupt!\n\n");
+			break;
+		case 0x600:
+			strcpy(text,"\nAlignment!\n\n");
+			break;
+		case 0x700:
+			strcpy(text,"\nProgram Interrupt!\n\n");
+			break;
+		case 0x800:
+			strcpy(text,"\nFPU Unavailable!\n\n");
+			break;
+		case 0x900:
+			strcpy(text,"\nDecrementer!\n\n");
+			break;
+		case 0x980:
+			strcpy(text,"\nHV Decrementer!\n\n");
+			break;
+		case 0xC00:
+			strcpy(text,"\nSystem Call!\n\n");
+			break;
+		case 0xD00:
+			strcpy(text,"\nTrace!\n\n");
+			break;
+		case 0xE00:
+			strcpy(text,"\nFPU Assist!\n\n");
+			break;
+		case 0xF20:
+			strcpy(text,"\nVPU Unavailable!\n\n");
+			break;
+		case 0x1600:
+			strcpy(text,"\nMaintenance!\n\n");
+			break;
+		case 0x1700:
+			strcpy(text,"\nVMX Assist!\n\n");
+			break;
+		case 0x1800:
+			strcpy(text,"\nThermal Managment!\n\n");
+			break;
+		case 0:
+			strcpy(text,"\nSegmentation Fault!\n\n");
+			break;
+		default:
+			sprintf(text,"\nException Vector! (%p)\n\n",exception);
+			break;
+	}
 		
 	flush_console();
 	

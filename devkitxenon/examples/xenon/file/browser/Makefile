@@ -126,5 +126,5 @@ endif
 
 
 run: $(BUILD) $(OUTPUT).elf32
-	cp $(OUTPUT).elf32 /var/lib/tftpboot/tftpboot/xenon
-	$(PREFIX)strip /var/lib/tftpboot/tftpboot/xenon
+	$(PREFIX)strip $(OUTPUT).elf32
+	cp $(OUTPUT).elf32 /srv/tftp/tftpboot/xenon

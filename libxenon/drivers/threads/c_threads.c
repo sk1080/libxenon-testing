@@ -1086,6 +1086,9 @@ void threading_shutdown()
     while(wait[10]);
 }
 
+// xenon_syscalls.c
+extern void newlib_thread_init();
+
 // Starts up threading
 void threading_init()
 {
@@ -1141,6 +1144,9 @@ void threading_init()
     
     // Enable interrupts
     mtmsr(mfmsr() | 0x8000);
+	
+	// Init newlib malloc stuff
+	newlib_thread_init();	
     
     printf("All threads online!\n");
     

@@ -1100,68 +1100,62 @@ void xenos_autoset_mode(void) {
             break;
     }
 
-    // check for edid from hdmi/dvi
-/*
-    if (mode != VIDEO_MODE_HDMI_720P)
-        if (xenos_detect_hdmi_monitor(xenos_get_edid())) {
-            mode = VIDEO_MODE_HDMI_720P;
-        }
-*/
-    //if (mode != VIDEO_MODE_HDMI_720P){
-        struct edid * monitor_edid = xenos_get_edid();
+	struct edid * monitor_edid = xenos_get_edid();
 
-        if(monitor_edid){
-            // VGA OR HDMI/DVI
-            if(monitor_edid->input&DRM_EDID_INPUT_DIGITAL){
-                mode = VIDEO_MODE_HDMI_720P;
-            }
-            else{
-                mode = VIDEO_MODE_VGA_1024x768;
-            }
+	if(monitor_edid){
+		// HDMI or DVI
+		if(monitor_edid->input&DRM_EDID_INPUT_DIGITAL){
+			mode = VIDEO_MODE_HDMI_720P;
+		}
+		// VGA
+		else{
+			mode = VIDEO_MODE_VGA_1024x768;
+		}
 
-            // display some info
-            int dsp_i=0;
-            for(dsp_i=0;dsp_i<8;dsp_i++){
-                int hsize,vsize;
+		// display some info
+		int dsp_i=0;
+		for(dsp_i=0;dsp_i<8;dsp_i++){
+			int hsize=0,vsize=0;
 
-                hsize = ((monitor_edid->standard_timings[dsp_i].hsize*8)+248);
+			hsize = ((monitor_edid->standard_timings[dsp_i].hsize*8)+248);
 
-                switch(monitor_edid->standard_timings[dsp_i].vfreq_aspect){
-                    case 0:// 16/10
-                    {
-                        vsize = (hsize * 10) / 16;
-                        break;
-                    }
-                    case 1:// 4/3
-                    {
-                        vsize = (hsize * 3) / 4;
-                        break;
-                    }
-                    case 2:// 5/4
-                    {
-                        vsize = (hsize * 4) / 5;
-                        break;
-                    }
-                    case 3:// 16/9
-                    {
-                        vsize = (hsize * 9) / 16;
-                        break;
-                    }
-                    default:
-                    {
-                        printf("Error ?\r\n");
-                        break;
-                    }
-                }
-                printf("Supported mode :\r\n");
-                printf("XSize : %d\r\n",vsize);
-                printf("HSize : %d\r\n",hsize);
-            }
-        }
-   // }
+			switch(monitor_edid->standard_timings[dsp_i].vfreq_aspect){
+				case 0:// 16/10
+				{
+					vsize = (hsize * 10) / 16;
+					break;
+				}
+				case 1:// 4/3
+				{
+					vsize = (hsize * 3) / 4;
+					break;
+				}
+				case 2:// 5/4
+				{
+					vsize = (hsize * 4) / 5;
+					break;
+				}
+				case 3:// 16/9
+				{
+					vsize = (hsize * 9) / 16;
+					break;
+				}
+				default:
+				{
+					printf("Error ?\r\n");
+					break;
+				}
+			}
+			printf("Supported mode :\r\n");
+			printf("XSize : %d\r\n",vsize);
+			printf("HSize : %d\r\n",hsize);
+		}
+	}
 
     xenos_set_mode(&xenos_modes[mode]);
 }
+
+static int xenos_initialized = 0;
 
 void xenos_init(int videoMode) {
     xenos_id = read32(0xd0010000) >> 16;
@@ -1187,9 +1181,19 @@ void xenos_init(int videoMode) {
         xenos_is_hdmi = xenos_detect_hdmi_monitor(xenos_edid);
         if (xenos_is_hdmi) printf("Detected HDMI monitor!\n");
     }
+	
+	xenos_initialized = 1;
+}
+
+int xenos_is_initialized(){
+	return xenos_initialized;
 }
 
 int xenos_is_overscan() {
-    assert(xenos_current_mode);
-    return xenos_current_mode->overscan;
+    //assert(xenos_current_mode);
+	if(xenos_current_mode)
+		return xenos_current_mode->overscan;
+	// video not initialised ?
+	else 
+		return -1;
 }

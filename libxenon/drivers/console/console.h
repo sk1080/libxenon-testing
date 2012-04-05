@@ -40,6 +40,7 @@ void console_putch(const char c);
 void console_clrscr();
 void console_init(void);
 void console_close(void);
+int console_is_initialized();
 
 #ifdef __cplusplus
 };
