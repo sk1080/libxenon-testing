@@ -762,6 +762,25 @@ PTHREAD thread_create(void* entrypoint, unsigned int stack_size,
     return pthr;
 }
 
+void thread_set_name(PTHREAD pthr, const char * name)
+{
+    //unsigned int irql = thread_spinlock(&ThreadListLock);
+    pthr->Name = name;
+    //thread_unlock(&ThreadListLock, irql);
+}
+
+PTHREAD thread_get_pool(int i)
+{
+	PTHREAD thread = NULL;
+    //unsigned int irql = thread_spinlock(&ThreadListLock);
+	if(i >= 0 && i < MAX_THREAD_COUNT)
+	{
+		thread = &ThreadPool[i];
+	}
+    //thread_unlock(&ThreadListLock, irql);
+	return thread;
+}
+
 void thread_set_processor(PTHREAD pthr, unsigned int processor)
 {
     unsigned int irql = thread_spinlock(&ThreadListLock);

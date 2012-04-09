@@ -171,10 +171,12 @@ typedef struct _THREAD
                 // just set SleepTime to zero, scheduler will handle the rest
     long long SleepTime; // How long until we wake up (milliseconds * 2500) // 0x26C
     
+    const char *Name; // 0x274
+
     // TODO: Have a list of objects that if signaled, will wake us up
     
-    char * StackBase; // The bottom of our stack // 0x274
-    unsigned int StackSize; // The size of our stack // 0x278
+    char * StackBase; // The bottom of our stack // 0x278
+    unsigned int StackSize; // The size of our stack // 0x27C
     
 } THREAD, *PTHREAD; // 0x27C
 
@@ -200,6 +202,9 @@ void threading_shutdown();
 PTHREAD thread_create(void* entrypoint, unsigned int stack_size,
         void* argument, unsigned int flags);
 
+// Sets the name of a thread
+void thread_set_name(PTHREAD pthr, const char * name);
+
 // Call this to free up the handle for use by other threads, after calling
 // DO NOT TOUCH THE HANDLE AGAIN
 void thread_close(PTHREAD pthr);
@@ -207,6 +212,9 @@ void thread_close(PTHREAD pthr);
 // Returns the pointer to the current thread, feel free to use on the thread you fetch,
 // As you are running, thus your pointer is valid
 PTHREAD thread_get_current();
+
+// Get a thread from the pool
+PTHREAD thread_get_pool(int i);
 
 // Swap the thread's processor
 void thread_set_processor(PTHREAD pthr, unsigned int processor);
