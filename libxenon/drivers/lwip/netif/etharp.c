@@ -615,7 +615,7 @@ etharp_find_addr(struct netif *netif, ip_addr_t *ipaddr,
  *
  * @see pbuf_free()
  */
-void
+static void
 etharp_ip_input(struct netif *netif, struct pbuf *p)
 {
   struct eth_hdr *ethhdr;
@@ -664,7 +664,7 @@ etharp_ip_input(struct netif *netif, struct pbuf *p)
  *
  * @see pbuf_free()
  */
-void
+static void
 etharp_arp_input(struct netif *netif, struct eth_addr *ethaddr, struct pbuf *p)
 {
   struct etharp_hdr *hdr;
