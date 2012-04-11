@@ -56,6 +56,7 @@
 /* SETTINGS */
 
 #define LWIP_PROVIDE_ERRNO      1
+#define ERRNO					1
 #define MEM_ALIGNMENT           4
 #define MEMP_NUM_PBUF           1024
 #define MEMP_NUM_SYS_TIMEOUT    20
