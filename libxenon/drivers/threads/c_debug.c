@@ -6,6 +6,7 @@
 #include <xenon_uart/xenon_uart.h>
 #include <xenon_smc/xenon_smc.h>
 #include <ppc/cache.h>
+#include <newlib/vfs.h>
 #include <threads/threads.h>
 #include <threads/debug.h>
 #include <ppc/atomic.h>
@@ -13,6 +14,11 @@
 
 static char exception_text[4096]="\0";
 debug_function_proc debugRoutine = debug_routine_stub;
+debug_poll_proc debugPoll = debugPoll_stub;
+
+void debugPoll_stub()
+{
+}
 
 static void debug_flush_console()
 {
@@ -67,6 +73,43 @@ static void debug_cpu_print_stack(void *pc,void *lr,void *r1)
 		}
 	}
 }
+
+void printstack(void *pc,void *lr,void *r1)
+{
+	register unsigned int i = 0;
+	register frame_rec_t l,p = (frame_rec_t)lr;
+
+	l = p;
+	p = r1;
+
+	if (!ptr_seems_valid(p)) return;
+
+	printf("%s\nSTACK DUMP:",exception_text);
+
+	for(i=0;i<CPU_STACK_TRACE_DEPTH-1 && ptr_seems_valid(p->up);p=p->up,i++) {
+		if(i%4) printf("%s --> ",exception_text);
+		else {
+			if(i>0) printf("%s -->\n",exception_text);
+			else printf("%s\n",exception_text);
+		}
+
+		switch(i) {
+			case 0:
+				if(pc) printf("%s%p",exception_text,pc);
+				break;
+			case 1:
+				printf("%s%p",exception_text,(void*)l);
+				break;
+			default:
+				if(p && p->up) printf("%s%p",exception_text,
+                                        (unsigned int)(p->up->lr));
+				break;
+		}
+	}
+
+	printf("\n");
+}
+
 static char *exception_strings[] =
 {
     "Unknown Exception!",
@@ -109,7 +152,7 @@ void dump_thread_context_to_screen(PROCESSOR_DATA_BLOCK *processor,
     
     debug_cpu_print_stack((void*)context->Iar,(void*)context->Lr,(void*)context->Gpr[1]);
 
-    strcat(exception_text,"\n\nOn uart: 'h'=Halt, 'r'=Reboot\n\n");
+    strcat(exception_text,"\n\nOn uart: 'h'=Halt, 'r'=Reboot, 'x'=Xell\n\n");
 
     debug_flush_console();
 
@@ -123,6 +166,13 @@ void dump_thread_context_to_screen(PROCESSOR_DATA_BLOCK *processor,
                             xenon_smc_power_reboot();
                             for(;;);
                             break;
+                    case 'x':
+                    		if(processor->CurrentProcessor == 0)
+                    		{
+                    			threading_shutdown();
+                    			exit(0);
+                    		}
+                    		break;
             }
     }
 }
@@ -300,20 +350,5 @@ int printf(const char * string, ...)
     
     debug_print(buf, r);
     
-    return r;
-}
-
-int printf2(const char * string, ...)
-{
-    char buf[0x200];
-    va_list ap;
-    int r;
-
-    va_start(ap, string);
-    r = vsnprintf(buf, 0x200, string, ap);
-    va_end(ap);
-
-    debug_print(buf, r);
-
     return r;
 }
