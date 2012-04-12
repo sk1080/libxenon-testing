@@ -1,3 +1,9 @@
+//The lamest gdbstub in existance
+//TODO: Implement more functionality
+//TODO: Refactor code further
+//TODO: Cleanup
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,310 +19,34 @@
 #include <lwip/netdb.h>
 #include <network/network.h>
 
+#include "gdbroutines.h"
+
 
 static int stub_active = 0;
 static int attached = 0;
 static int active = 0;
-static int mode = 0;//0 = uart, 1 = network
-
-static int threads_suspended = 0;
+static int running = 0;
 
 static int signal = 3;
 
 PTHREAD ctrlthread;
 PTHREAD otherthread;
 
-int gdb_active()
+int gdb_active()//was really only usefull for uart
 {
 	return stub_active;
-}
-
-static int hex(char ch)
-{
-	if (ch >= 'a' && ch <= 'f')
-		return ch-'a'+10;
-	if (ch >= '0' && ch <= '9')
-		return ch-'0';
-	if (ch >= 'A' && ch <= 'F')
-		return ch-'A'+10;
-	return -1;
-}
-
-static int hexToInt(char **ptr, int *ival)
-{
-	int cnt;
-	int val,nibble;
-
-	val = 0;
-	cnt = 0;
-	while(**ptr) {
-		nibble = hex(**ptr);
-		if(nibble<0) break;
-
-		val = (val<<4)|nibble;
-		cnt++;
-
-		(*ptr)++;
-	}
-	*ival = val;
-	return cnt;
-}
-
-int ptr_seems_valid(void * p){	//Putting this here because this is subject to change
-	return (unsigned int)p>=0x80000000 && (unsigned int)p<0xa0000000;
-}
-
-const char hexchars[]="0123456789abcdef";
-#define BUFMAX			2048
-
-char* mem2hstr(char *buf,const char *mem,int count)
-{
-	int i;
-	char ch;
-
-	for(i=0;i<count;i++,mem++) {
-		ch = *mem;
-		*buf++ = hexchars[ch>>4];
-		*buf++ = hexchars[ch&0x0f];
-	}
-	*buf = 0;
-	return buf;
-}
-
-char getdbgchar(void)//TODO: UART *DOES* *NOT* *WORK*, needs a lot of hacking to get it to work at all, somebody please fix this(getting data on uart is hard)
-{
-	return getch();	 //TODO: THESE ARE JUST HERE TO TAKE THE PLACE OF MY HACKS FOR THE TIME BEING
-}
-
-void putdbgchar(unsigned char c) //TODO: UART has not been functional since I added net support, and it was hacky then
-{
-	putch(c);
-}
-
-void putdbgstr(unsigned char *s)
-{
-	uart_puts(s);
-}
-
-static void uart_putpacket(const char *buffer)
-{
-	unsigned char recv;
-	unsigned char chksum,ch;
-	char *ptr;
-	const char *inp;
-	static char outbuf[BUFMAX];
-
-	do {
-		inp = buffer;
-		ptr = outbuf;
-
-		*ptr++ = '$';
-
-		chksum = 0;
-		while((ch=*inp++)!='\0') {
-			*ptr++ = ch;
-			chksum += ch;
-		}
-
-		*ptr++ = '#';
-		*ptr++ = hexchars[chksum>>4];
-		*ptr++ = hexchars[chksum&0x0f];
-		*ptr = '\0';
-
-		putdbgstr(outbuf);
-
-		recv = getdbgchar();
-	} while((recv&0x7f)!='+');
-}
-
-static void uart_getpacket(char *buffer)
-{
-	char ch;
-	unsigned char chksum,xmitsum;
-	int i,cnt;
-
-	do {
-		while((ch=(getdbgchar()&0x7f))!='$');
-
-		cnt = 0;
-		chksum = 0;
-		xmitsum = -1;
-
-		while(cnt<BUFMAX) {
-			ch = getdbgchar()&0x7f;
-			if(ch=='#') break;
-
-			chksum += ch;
-			buffer[cnt] = ch;
-			cnt++;
-		}
-		if(cnt>=BUFMAX) continue;
-
-		buffer[cnt] = 0;
-		if(ch=='#') {
-			xmitsum = hex(getdbgchar()&0x7f)<<4;
-			xmitsum |= hex(getdbgchar()&0x7f);
-
-			if(chksum!=xmitsum) putdbgchar('-');
-			else {
-				putdbgchar('+');
-				if(buffer[2]==':') {
-					putdbgchar(buffer[0]);
-					putdbgchar(buffer[1]);
-
-					cnt = strlen((const char*)buffer);
-					for(i=3;i<=cnt;i++) buffer[i-3] = buffer[i];
-				}
-			}
-		}
-	} while(chksum!=xmitsum);
-}
-
-void halt_threads()
-{
-	if(threads_suspended != 0)
-		return;
-
-	int thisthread = thread_get_current()->ThreadId;
-	int i;
-	for(i = 0; i < MAX_THREAD_COUNT; i++)
-	{
-		PTHREAD pthr = thread_get_pool(i);
-		if(pthr->Valid && pthr->ThreadId != thisthread)
-		{
-			if(mode == 1 && pthr->Name)
-			{
-				//printf("We have a named thread: %s\n", pthr->Name);
-
-				if(!strcmp(pthr->Name, "tcpip_thread"))
-				{
-					printf("lets not stop this one\n");
-					continue;
-				}
-				if(!strcmp(pthr->Name, "poll_thread"))
-				{
-					printf("lets not stop this one\n");
-					continue;
-				}
-			}
-
-			if(pthr->Priority != 0) //Idle threads
-			thread_suspend(pthr);
-		}
-	}
-
-	threads_suspended = 1;
-
-}
-
-void resume_threads()
-{
-	if(threads_suspended != 1)
-		return;
-	int thisthread = thread_get_current()->ThreadId;
-	int i;
-	for(i = 0; i < MAX_THREAD_COUNT; i++)
-	{
-		PTHREAD pthr = thread_get_pool(i);
-		if(pthr->Valid && pthr->ThreadId != thisthread)
-		{
-			if(mode == 1 && pthr->Name)
-			{
-				//printf("We have a named thread: %s\n", pthr->Name);
-
-				if(!strcmp(pthr->Name, "tcpip_thread"))
-					continue;
-				if(!strcmp(pthr->Name, "poll_thread"))
-					continue;
-			}
-
-			if(pthr->Priority != 0)
-			thread_resume(pthr);
-		}
-	}
-	threads_suspended = 0;
-
-}
-
-void halt_threads_nolock()
-{
-	if(threads_suspended != 0)
-		return;
-	//int thisthread = thread_get_current()->ThreadId;
-	int i;
-	for(i = 0; i < MAX_THREAD_COUNT; i++)
-	{
-		PTHREAD pthr = thread_get_pool(i);
-		if(pthr->Valid)
-		{
-			if(mode == 1 && pthr->Name)
-			{
-				//printf("We have a named thread: %s\n", pthr->Name);
-
-				if(!strcmp(pthr->Name, "tcpip_thread"))
-				{
-					continue;
-				}
-				if(!strcmp(pthr->Name, "poll_thread"))
-				{
-					continue;
-				}
-				if(!strcmp(pthr->Name, "gdb"))
-				{
-					continue;
-				}
-			}
-
-			if(pthr->Priority != 0) //Idle threads
-			    if(pthr->SuspendCount < 80)
-			    {
-			        pthr->SuspendCount++;
-			    }
-		}
-	}
-	threads_suspended = 1;
-}
-
-void resume_threads_nolock()
-{
-	if(threads_suspended != 1)
-		return;
-	//int thisthread = thread_get_current()->ThreadId;
-	int i;
-	for(i = 0; i < MAX_THREAD_COUNT; i++)
-	{
-		PTHREAD pthr = thread_get_pool(i);
-		if(pthr->Valid)
-		{
-			if(mode == 1 && pthr->Name)
-			{
-				//printf("We have a named thread: %s\n", pthr->Name);
-
-				if(!strcmp(pthr->Name, "tcpip_thread"))
-					continue;
-				if(!strcmp(pthr->Name, "poll_thread"))
-					continue;
-				if(!strcmp(pthr->Name, "gdb"))
-					continue;
-			}
-
-			if(pthr->Priority != 0)
-			if(pthr->SuspendCount)
-			{
-			    pthr->SuspendCount--;
-			}
-		}
-	}
-	threads_suspended = 0;
-
 }
 
 static 	int listen_fd, sock_fd;
 
 static int net_putchar(char c)
 {
-	return send(sock_fd, &c, 1, 0);
+	int ret;
+	do{ret = send(sock_fd, &c, 1, 0);}while(ret < 0);
+	return ret;
 }
+
+extern const char hexchars[];
 
 static void net_putpacket(const char * buffer)
 {
@@ -343,10 +73,11 @@ static void net_putpacket(const char * buffer)
 		*ptr++ = hexchars[chksum&0x0f];
 		*ptr = '\0';
 
-		printf("Putting packet %s\n", outbuf);
-		send(sock_fd, outbuf, strlen(outbuf), 0);
+		//printf("Putting packet %s\n", outbuf);
+		int ret;
+		do{ret = send(sock_fd, outbuf, strlen(outbuf), 0);}while(ret < 0);
 		//printf("waiting for ack...\n");
-		recv(sock_fd, outbuf, 1, 0);
+		while(recv(sock_fd, outbuf, 1, 0) <= 0);
 		//printf("got ack...\n");
 		recv = outbuf[0];
 
@@ -361,31 +92,30 @@ static int net_getpacket(char * buffer)
 	int i;
 	int len;
 
-	//fd_set fds;
-	//struct timeval tv = {0, 0};
-
 	do {
 		chksum = 0;
 		xmitsum = 0;
 
-	//FD_ZERO(&fds);
-	//FD_SET(sock_fd, &fds);
-	//r = select(sock_fd + 1, &fds, NULL, NULL, &tv);
-	//if(r == 1)
 	long arg = lwip_fcntl(sock_fd, F_GETFL, 0);
 	lwip_fcntl(sock_fd, F_SETFL, arg | O_NONBLOCK);
 	len = recv(sock_fd, buffer, BUFMAX, 0);
 	lwip_fcntl(sock_fd, F_SETFL, arg);
 
-
-	//else if (r == -1)
-	//	return -1;
-	//else
-	//	continue;
 	if(errno)
 	{
 		if(errno == EAGAIN)//?
 		{
+			//Check if we have a crash
+			if(active == 0 && attached == 1 && running == 0)
+			{
+				printf("crash detected\n");
+				buffer[0] = '?'; //Simulate a ? packet if we are resuming from a continue
+				buffer[1] = '\0';
+				active = 1;
+				return 0;
+			}
+
+			chksum = 1; xmitsum = 0; //avoid lols
 			continue;
 		}
 		else
@@ -395,22 +125,14 @@ static int net_getpacket(char * buffer)
 			return -1;
 		}
 	}
-	if(len == -1)
+
+	buffer[len] = '\00';
+
+	//printf("Got packet of len %i: %s\n",len, buffer);
+	if(len < 0)
 	{
-		perror("-1 len:");
+		chksum = 1; xmitsum = 0; //avoid lols, idk what is going on with no error...
 		continue;
-	}
-	buffer[len] = '\0';
-
-	printf("Got packet of len %i: %s\n",len, buffer);
-
-	if(len > 3)
-	{
-
-	}
-	else
-	{
-		printf("?\n");
 	}
 
 	if(buffer[0] != '$')
@@ -418,11 +140,25 @@ static int net_getpacket(char * buffer)
 		printf("Break!\n");
 
 
+		if(active == 0 && attached == 1 && running == 1)
+		{
+			//Break from a continue
+			halt_threads();
+			running = 0;
+			buffer[0] = '?'; //Simulate a ? packet if we are resuming from a continue
+			buffer[1] = '\0';
+			active = 1;
+			return 0;
+		}
+
 		if(active == 0)
 		{
 			active = 1;
 			halt_threads();
+			running = 0;
 		}
+
+		attached = 1;
 
 		chksum = 1; xmitsum = 0; //avoid lols
 		continue;
@@ -433,7 +169,6 @@ static int net_getpacket(char * buffer)
 	while(cnt < len)
 	{
 		ch = buffer[cnt];
-		//printf("chksumming char %c\n", ch);
 		if(ch=='#') break;
 
 		chksum += ch;
@@ -443,16 +178,14 @@ static int net_getpacket(char * buffer)
 	}
 	if(cnt > len)
 	{
-		printf("overrun\n");
+		printf("packet overrun\n");
 		continue;
 	}
 	if(ch == '#')
 	{
 		cnt++;
-		//printf("read chk char char %c\n", buffer[cnt]);
 		xmitsum = hex(buffer[cnt]&0x7f)<<4;
 		cnt++;
-		//printf("read chk char char %c\n", buffer[cnt]);
 		xmitsum |= hex(buffer[cnt]&0x7f);
 		buffer[cnt - 2] = '\0';
 
@@ -476,15 +209,12 @@ static int net_getpacket(char * buffer)
 
 	} while(chksum != xmitsum);
 
-	//printf("parsed as: %s\n", buffer);
-
-
 	return 0;
 }
 
 static void putpacket(const char *buffer)
 {
-	if(mode == 0)
+	if(get_mode() == 0)
 		uart_putpacket(buffer);
 	else
 		net_putpacket(buffer);
@@ -492,7 +222,7 @@ static void putpacket(const char *buffer)
 
 static int getpacket(char * buffer)
 {
-	if(mode == 0)
+	if(get_mode() == 0)
 		uart_getpacket(buffer);
 	else
 		return net_getpacket(buffer);
@@ -511,12 +241,11 @@ int parse_cmd(char * buffer)
 		{
 			switch(buffer[1])
 			{
-				case 'S':
+				case 'S'://qSupported
 				{
 					if(buffer[2] == 'u')
 					{
-					//printf("Got qSupported\n");
-					putpacket("PacketSize=2048");
+						putpacket("PacketSize=2048");
 					}
 					else
 					{
@@ -538,27 +267,24 @@ int parse_cmd(char * buffer)
 					putpacket(buffer);
 					break;
 				}
-				case 'A':
+				case 'A'://qAttached
 				{
 					putpacket("1");
 					break;
 				}
-				case 'O':
+				case 'O'://qOffsets
 				{
-					//qOffsets
-					putpacket("Text=0;Data=0;Bss=0");
+					putpacket("Text=0;Data=0;Bss=0");//We do not use any relocation
 					break;
 				}
 				case 'f':
 				{
-
-						int thisthread = thread_get_current()->ThreadId;
 						int i;
 						sprintf(buffer, "m");
 						for(i = 0; i < MAX_THREAD_COUNT; i++)
 						{
 							PTHREAD pthr = thread_get_pool(i);
-							if(pthr->Valid && pthr->ThreadId != thisthread)
+							if(pthr->Valid)
 							{
 								sprintf(buffer, "%s%x,", buffer, pthr->ThreadId + 1); //FIXME: a lot of threads will make this fial
 							}
@@ -576,12 +302,61 @@ int parse_cmd(char * buffer)
 				}
 				case 'T':
 				{
-					putpacket("");
+					if(buffer[2] == 'h') //qThreadExtraInfo: extra thread info
+					{
+
+					char tempbuffer[BUFMAX / 4];
+					int thread;
+					char * ptr = &buffer[17];
+					hexToInt(&ptr, &thread);
+					ptr = buffer;
+					PTHREAD pthr = thread_get_pool(thread);
+					sprintf(tempbuffer, "No Name");
+					if(pthr)
+					{
+						if(pthr->Valid)
+							if(pthr->Name)
+							{
+								sprintf(tempbuffer, "Name: %s", pthr->Name);
+							}
+					}
+
+
+					int len = strlen(tempbuffer);
+
+					int i;
+					for(i = 0; i < len; i++)
+					{
+						sprintf(ptr, "%x", tempbuffer[i]);
+						ptr +=2;
+					}
+
+					putpacket(buffer);
 					break;
+
+					}
+					else //qTStatus
+					{
+						putpacket("");
+						break;
+					}
 				}
 				case 'P':
 				{
-					putpacket(""); //bitch
+					printf("Got qP\n");
+					//bitch
+					int ret,rthread,mask;
+
+					ret = parseqp(buffer,&mask,&rthread);
+					if(!ret || (mask&~0x1f)) {
+						putpacket("E01");
+						break;
+					}
+					printf("qP thread parsed as %i\n", rthread);
+					PTHREAD pthr = thread_get_pool(rthread - 1);
+
+					packqq(buffer,mask,rthread,pthr);
+					putpacket(buffer);
 					break;
 				}
 				default:
@@ -589,12 +364,12 @@ int parse_cmd(char * buffer)
 			}
 			break;
 		}
-		case 'H':
+		case 'H'://set the current thread
 		{
 			char * ptr = &buffer[2];
 			int thread;
 			hexToInt(&ptr, &thread);
-			thread--; //Ghetto: gdb doesn't like thread id 0, also this fails...
+			thread--; //Ghetto: gdb doesn't like thread id 0
 			if(thread < 0)
 				thread++;
 			PTHREAD pthr = thread_get_pool(thread);
@@ -644,17 +419,16 @@ int parse_cmd(char * buffer)
 
 			break;
 		}
-		case '?':
+		case '?': //Halt reason
 		{
-			char buffer[10]; //enough?
-			sprintf(buffer, "S%i", signal);
+			char buffer[4];
+			sprintf(buffer, "S%02.2X", signal);
 			putpacket(buffer);
 			break;
 		}
-		case 'g':
+		case 'g': //Read registers
 		{
 			char *ptr = buffer;
-		    //unsigned int irql = thread_spinlock(&ThreadListLock);
 
 			if(otherthread == NULL)
 			{
@@ -662,16 +436,11 @@ int parse_cmd(char * buffer)
 				break;
 			}
 
-		    //ptr = mem2hstr(ptr, (char*)&otherthread->Context.Gpr, 32 * 4);
-		    if(processor->CurrentProcessor == 0)
-		    {
-		    	//dump_thread_context(&context);
-		    }
-			    int reg;
-			    for(reg = 0; reg < 32; reg++)
-			    {
-			    	ptr = mem2hstr(ptr, (char*)&otherthread->Context.Gpr[reg] + 4, 4);
-			    }
+			int reg;
+			for(reg = 0; reg < 32; reg++)
+			{
+			    ptr = mem2hstr(ptr, (char*)&otherthread->Context.Gpr[reg] + 4, 4);
+			}
 		    ptr = mem2hstr(ptr, (char*)&otherthread->Context.FpuVpu.Fpr, 32 * 8);
 		    ptr = mem2hstr(ptr, (char*)&otherthread->Context.Iar + 4, 4);
 		    ptr = mem2hstr(ptr, (char*)&otherthread->Context.Msr + 4, 4);
@@ -681,26 +450,20 @@ int parse_cmd(char * buffer)
 		    ptr = mem2hstr(ptr, (char*)&otherthread->Context.Xer + 4, 4);
 		    ptr = mem2hstr(ptr, (char*)&otherthread->Context.FpuVpu.Fpscr + 4, 4);
 
-
-		    if(processor->CurrentProcessor == 0)
-		    {
-		    	//restore_thread_context(&context);
-		    }
-
-		    //thread_unlock(&ThreadListLock, irql);
 		    putpacket(buffer);
 			break;
 		}
-		case 'D':
+		case 'D'://Detach
 		{
 			attached = 0;
 			active = 0;
+			running = 1;
 			resume_threads();
 			putpacket("OK");
-			//thread_enable_interrupts(msr);
 			return 1;
+			break;
 		}
-		case 'm':
+		case 'm'://Read memory
 		{
 			char * ptr = &buffer[1];
 			unsigned int addr;
@@ -730,15 +493,24 @@ int parse_cmd(char * buffer)
 
 			break;
 		}
-		case 'c':
+		case 'c'://Continue
 		{
 			//TODO
-			attached = 0;
 			active = 0;
+			running = 1;
 			resume_threads();
-			putpacket("OK");
-			//thread_enable_interrupts(msr);
-			return 1;
+			break;
+		}
+		case 'C'://Continue with signal
+		{
+			int val;
+			char * ptr = &buffer[1];
+			hexToInt(&ptr, &val);
+			signal = val;
+			active = 0;
+			running = 1;
+			resume_threads();
+			break;
 		}
 		case 'T':
 		{
@@ -765,8 +537,8 @@ int parse_cmd(char * buffer)
 		}
 		default:
 		{
-			printf("Got packet %c\n", buffer[0]);
-			putpacket("");
+			printf("Got packet %c\n", buffer[0]);//Unknown packet
+			putpacket("");//Yea we don't support that
 			break;
 		}
 
@@ -777,12 +549,11 @@ int parse_cmd(char * buffer)
 
 void net_server()
 {
+	int port = 2159;
 
-	mode = 1;
+	set_mode(1);//network
 
-	printf("Gdb server starting up on port 2159\n");
-
-	//Thank you bochs
+	printf("Gdb server starting up on port %i\n", port);
 
 	struct sockaddr_in sockaddr;
 	socklen_t sockaddr_len;
@@ -844,12 +615,6 @@ void net_server()
 		return;
 	}
 
-	/*
-	long arg;
-	arg = lwip_fcntl(sock_fd, F_GETFL, 0);
-	lwip_fcntl(sock_fd, F_SETFL, arg | O_NONBLOCK);
-	*/
-
 	unsigned int ip = sockaddr.sin_addr.s_addr;
 	printf("Connected to %d.%d.%d.%d\n", (ip >> 24) & 0xff, (ip >> 16) & 0xff, (ip >> 8) & 0xff, ip & 0xff);
 
@@ -857,16 +622,19 @@ void net_server()
 
 	while(1)
 	{
-		printf("Waiting for a packet\n");
+		//printf("Waiting for a packet\n");
 		int ret = net_getpacket(buffer);
 		if(ret == -1)
+		{
+			//close(sock_fd); The socket is already closed by now(hopefully)
 			break;
+		}
 
 		ret = parse_cmd(buffer);
 
 		if(ret == 1)
 		{
-			close(sock_fd);
+			//close(sock_fd); NO
 			break;
 		}
 
@@ -878,7 +646,7 @@ void net_server()
 
 }
 
-void gdbserver()
+void gdbserver()//UART Version, not usable at this time
 {
 	while(1)
 	{
@@ -921,8 +689,6 @@ void gdbserver()
 // Does exception stuff
 int gdb_debug_routine(unsigned int code, CONTEXT *context)
 {
-
-	//int msr = thread_disable_interrupts();
 
 	if(debug_routine_stub(code, context) == 1)
 		return 1;
@@ -968,69 +734,7 @@ int gdb_debug_routine(unsigned int code, CONTEXT *context)
 
 	halt_threads_nolock();
 
-	//Time to do things the ghetto way, as we are already in lock
-	//printf("Suspending threads...\n");
-
-	//uart_puts("in to the loop\n");
-	/*
-	char buffer[100];
-	int i;
-	for(i = 0; i < MAX_THREAD_COUNT; i++)
-	{
-
-		//sprintf(buffer,"ct%i",i);
-		//uart_puts(buffer);
-		PTHREAD pthr = thread_get_pool(i);
-		//sprintf(buffer,"gt%i",i);
-		//uart_puts(buffer);
-		if(pthr == NULL || pthr == thread)
-			continue;
-		if(pthr->Valid )
-		{
-			if(pthr->Name)
-				if(!strcmp(pthr->Name, "gdb"))
-				{
-					//TODO
-					continue;
-				}
-
-			//uart_puts("c1");
-
-			if(mode == 1 && pthr->Name)
-			{
-				//printf("We have a named thread: %s\n", pthr->Name);
-
-				if(!strcmp(pthr->Name, "tcpip_thread"))
-				{
-					//printf("lets not stop this one\n");
-					continue;
-				}
-				if(!strcmp(pthr->Name, "poll_thread"))
-				{
-					//printf("lets not stop this one\n");
-					continue;
-				}
-			}
-
-			//uart_puts("c2");
-
-			if(pthr->Priority != 0) //Idle threads
-			if(pthr->SuspendCount < 80)
-			{
-			    pthr->SuspendCount++;
-			}
-
-			//uart_puts("c3\n");
-		}
-	}
-	*/
-
-
-	//printf("Suspended threads...\n");
-
-    //context->Iar += 4;
-
-	//thread_enable_interrupts(msr);
+	running = 0;
 
     return 1;
 }
@@ -1042,14 +746,7 @@ void gdb_init()
 {
 	ctrlthread = thread_get_pool(0);
 	otherthread = thread_get_pool(0);
-
-    //debugRoutine = gdb_debug_routine;
-	//debugPoll = gdbserver;
-    //stub_active = 1;
-    //putpacket("Otrollolol");
     printf("Creating gdb thread\n");
-    //gdbthread = thread_create(gdbserver, 0, 0, 0);
-
     gdbthread = thread_create(net_server, 0, 0, 0);
     thread_set_name(gdbthread, "gdb");
     debugRoutine = gdb_debug_routine;
@@ -1058,7 +755,6 @@ void gdb_init()
 void gdb_stop()
 {
 	//end the thread here...?
-	active = 0;
-	stub_active = 0;
+	//TODO
 }
 

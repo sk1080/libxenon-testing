@@ -302,3 +302,18 @@ int printf(const char * string, ...)
     
     return r;
 }
+
+int printf2(const char * string, ...)
+{
+    char buf[0x200];
+    va_list ap;
+    int r;
+
+    va_start(ap, string);
+    r = vsnprintf(buf, 0x200, string, ap);
+    va_end(ap);
+
+    debug_print(buf, r);
+
+    return r;
+}
