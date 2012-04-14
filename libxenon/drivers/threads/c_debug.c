@@ -11,6 +11,8 @@
 #include <ppc/atomic.h>
 #include <ppc/register.h>
 
+#include <threads/breakpoint.h>
+
 static char exception_text[4096]="\0";
 debug_function_proc debugRoutine = debug_routine_stub;
 
@@ -168,13 +170,16 @@ unsigned int decode_exception(PROCESSOR_DATA_BLOCK *processor, unsigned int exce
         // First, check if we handle this type of trap, if not just return trap
         if((op & 0xFFFFFF00) != 0x0FE00000) // twi 31, r0, 0
             return EXCEPT_CODE_TRAP;
-        
+
         // Extract the trap type
         unsigned int trap_type = op & 0xFF;
         
         if(trap_type == DEBUG_TRAP_PRINT)
             return EXCEPT_CODE_DEBUG_PRINT;
         
+        if(trap_type == DEBUG_TRAP_BREAK)
+        	return EXCEPT_CODE_BREAKPOINT;
+
         // Not defined, just trap
         return EXCEPT_CODE_TRAP;
     }
@@ -282,6 +287,49 @@ void program_interrupt_handler()
     // Restore context
     restore_thread_context(&context);
     
+    processor->ExceptionRecursion = 0;
+    if(recursionCheck)
+        unlock(&program_interrupt_lock);
+}
+
+void trace_interrupt_handler()
+{
+    // This is called when the program single steps
+    PROCESSOR_DATA_BLOCK *processor = thread_get_processor_block();
+
+    // Local stack context
+    CONTEXT context;
+
+    // If the exception was handled
+    unsigned int handled = 0;
+
+    // If we are first entering this handler
+    unsigned int recursionCheck = 1;
+
+    // Make sure only one exception gets in at a time
+    if(processor->ExceptionRecursion == 0)
+        lock(&program_interrupt_lock);
+    else
+        recursionCheck = 0;
+    processor->ExceptionRecursion = 1;
+
+    // Save the context
+    dump_thread_context(&context);
+
+    // Decode
+    unsigned int code = EXCEPT_CODE_TRACE;
+
+    // Dispatch
+    if(debugRoutine)
+        handled = debugRoutine(code, &context);
+
+    // Crash dump
+    if(handled == 0)
+        dump_thread_context_to_screen(processor, code, &context);
+
+    // Restore context
+    restore_thread_context(&context);
+
     processor->ExceptionRecursion = 0;
     if(recursionCheck)
         unlock(&program_interrupt_lock);

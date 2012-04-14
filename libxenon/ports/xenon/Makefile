@@ -131,6 +131,7 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/threads/gdbroutines.o \
 	../../drivers/threads/mutex.o \
 	../../drivers/threads/cond.o \
+	../../drivers/threads/breakpoint.o \
 	../../drivers/libfdt/fdt_ro.o \
 	../../drivers/libfdt/fdt_rw.o \
 	../../drivers/libfdt/fdt_strerror.o \

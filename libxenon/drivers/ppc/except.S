@@ -327,7 +327,52 @@ DO_EXCEPT(0x00000A00, ex_reserved);
         // Launch handler
         rfid
 
-DO_EXCEPT(0x00000D00, ex_trace);
+//DO_EXCEPT(0x00000D00, ex_trace);
+. = exc_base + 0xD00
+        // Save registers
+        mtsprg0 %r13
+        mfspr %r13, hsprg0 // Put the processor data block on r13
+        std %r3, OFF_REG(3)(%r13)
+        mflr %r3
+        std %r3, OFF_REG(REG_LR)(%r13)
+        mfctr %r3
+        std %r3, OFF_REG(REG_CTR)(%r13)
+        mfcr %r3
+        std %r3, OFF_REG(REG_CR)(%r13)
+        mfxer %r3
+        std %r3, OFF_REG(REG_XER)(%r13)
+        mfsprg0 %r3
+        std %r3, OFF_REG(13)(%r13)
+
+        // Save both return registers
+        mfsrr0 %r3
+        std %r3, OFF_REG(REG_SRR0)(%r13)
+        mfsrr1 %r3
+        std %r3, OFF_REG(REG_SRR1)(%r13)
+
+        // Setup the MSR
+        lis %r3, 0x1000
+        sldi %r3, %r3, 32 // Hypervisor Mode
+        ori %r3, %r3, 0x3030 // Data/Instruction relocate/Machine Check/FPU
+        oris %r3, %r3, 0x200 // VPU
+        mtsrr1 %r3
+
+        // Setup r13
+        addis %r13, %r13, 0x8000
+
+        // Setup return address
+        lis %r3, common_interrupt_handler@h
+        ori %r3, %r3, common_interrupt_handler@l
+        mtsrr0 %r3
+
+        // Move the handler to the link register
+        lis %r3, trace_interrupt_handler@h
+        ori %r3, %r3, trace_interrupt_handler@l
+        mtlr %r3
+
+        // Launch handler
+        rfid
+
 //DO_EXCEPT(0x00000E00, ex_fpu_assist);
 . = exc_base + 0xE00
 ex_fpu_assist:

@@ -566,3 +566,27 @@ void packqq(char *out,int mask,int thread,PTHREAD pthr)
         *out = 0;
 }
 
+
+int parsezbreak(const char *in,int *type,char **addr,int *len)
+{
+        int ttmp,atmp,ltmp;
+
+        in++;
+        if(!hstr2nibble(in,&ttmp) || *(in+1)!=',') return 0;
+
+        in += 2;
+        in = vhstr2int(in,&atmp);
+        if(in==NULL || *in!=',') return 0;
+
+        in++;
+        in = vhstr2int(in,&ltmp);
+        if(in==NULL || ltmp<1) return 0;
+
+        *type = ttmp;
+        *addr = (char*)atmp;
+        *len = ltmp;
+
+        return 1;
+}
+
+

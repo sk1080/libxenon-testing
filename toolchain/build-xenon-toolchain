@@ -188,8 +188,9 @@ function gdb_install
 	
 	make $PARALLEL >> $LOGFILE 2>&1 || exit 0
 	make install >> $LOGFILE 2>&1 || exit 0
-	
+	cd ..
 	rm -rf build
+	rm -rf $GDB
 	echo -e "Done"
 }
 

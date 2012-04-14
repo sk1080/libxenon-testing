@@ -19,6 +19,8 @@
 #include <lwip/netdb.h>
 #include <network/network.h>
 
+#include <threads/breakpoint.h>
+
 #include "gdbroutines.h"
 
 
@@ -108,7 +110,7 @@ static int net_getpacket(char * buffer)
 			//Check if we have a crash
 			if(active == 0 && attached == 1 && running == 0)
 			{
-				printf("crash detected\n");
+				printf("crash/trap detected\n");
 				buffer[0] = '?'; //Simulate a ? packet if we are resuming from a continue
 				buffer[1] = '\0';
 				active = 1;
@@ -402,16 +404,24 @@ int parse_cmd(char * buffer)
 							putpacket("OK");
 							break;
 						}
-						else
+						if(thread == 0)
 						{
-							if(pthr)
-								if(pthr->Valid)
+								if(otherthread)
 								{
-									otherthread = pthr;
 									putpacket("OK");
 									break;
 								}
 						}
+
+
+						if(pthr)
+							if(pthr->Valid)
+							{
+								otherthread = pthr;
+								putpacket("OK");
+								break;
+							}
+
 					}
 					putpacket("E01");
 
@@ -512,6 +522,20 @@ int parse_cmd(char * buffer)
 			resume_threads();
 			break;
 		}
+		case 's'://step
+		{
+			PTHREAD pthr = ctrlthread;
+			if(pthr == NULL)
+			{
+				ctrlthread = thread_get_pool(0);
+			}
+			pthr->Context.Msr |= 0x400;//Enable single step
+
+			active = 0;
+			running = 1;
+			resume_threads();
+			break;
+		}
 		case 'T':
 		{
 			char * ptr = &buffer[1];
@@ -531,6 +555,50 @@ int parse_cmd(char * buffer)
 				//putpacket("E02");
 				//break;
 			}
+
+			putpacket("OK");
+			break;
+		}
+		case 'z':
+		{
+			int ret,type,len;
+			char *addr;
+
+			ret = parsezbreak(buffer,&type,&addr,&len);
+			if(!ret) {
+				putpacket("E01");
+				break;
+			}
+			if(type!=0) break;
+
+			if(len<4) {
+				putpacket("E02");
+				break;
+			}
+
+			remove_breakpoint((unsigned int *)addr);
+
+			putpacket("OK");
+			break;
+		}
+		case 'Z':
+		{
+			int ret,type,len;
+			char *addr;
+
+			ret = parsezbreak(buffer,&type,&addr,&len);
+			if(!ret) {
+				putpacket("E01");
+				break;
+			}
+			if(type!=0) break;
+
+			if(len<4) {
+				putpacket("E02");
+				break;
+			}
+
+			set_breakpoint((unsigned int *)addr);
 
 			putpacket("OK");
 			break;
@@ -719,17 +787,27 @@ int gdb_debug_routine(unsigned int code, CONTEXT *context)
 			signal = 5;//tbd
 		break;
 
+		case EXCEPT_CODE_TRACE:
+			signal = 5;
+			//printf("Got a trace at %llX\n", context->Iar);
+		break;
+
 		default:
+			signal = 0;
 		break;
 	}
 
 	PROCESSOR_DATA_BLOCK *block;
 	block = (unsigned int *)(context->Gpr[13]);//more lame 64bit->32bit ghettocode
 
-	//printf("We have a fail on cpu %i\n", block->CurrentProcessor);
-
 	PTHREAD thread = block->CurrentThread;
-	//thread->SuspendCount++;
+
+
+	if(context->Msr && 0x400)//If we are single stepping then disable single step and trap
+	{
+		context->Msr &= ~0x400;
+	}
+
 	otherthread = thread;
 
 	halt_threads_nolock();

@@ -17,9 +17,11 @@
 #define EXCEPT_CODE_PRIVILEGED_INSTRUCTION      5
 #define EXCEPT_CODE_SEGMENTATION_FAULT_READ     6
 #define EXCEPT_CODE_SEGMENTATION_FAULT_WRITE    7
-#define EXCEPT_CODE_BREAKPOINT                  8 // Not used yet
+#define EXCEPT_CODE_BREAKPOINT                  8
+#define EXCEPT_CODE_TRACE						9
     
 // Debug Traps
 #define DEBUG_TRAP_PRINT 0x14 // The trap for printing to the debugger
+#define DEBUG_TRAP_BREAK 0x16 // The breakpoint trap
 
 #endif

@@ -39,6 +39,8 @@ void resume_threads_nolock();
 int parseqp(const char *in,int *mask,int *thread);
 void packqq(char *out,int mask,int thread,PTHREAD pthr);
 
+int parsezbreak(const char *in,int *type,char **addr,int *len);
+
 #ifdef	__cplusplus
 }
 #endif
