@@ -201,6 +201,12 @@ void newlib_thread_init(){
 	__syscalls.malloc_unlock = xenon_thread_malloc_unlock;
 }
 
+void newlib_thread_shutdown(){
+	__syscalls.malloc_lock = NULL;
+	__syscalls.malloc_unlock = NULL;
+	mutex_destroy(thread_mutex);
+}
+
 static void xenon_thread_malloc_lock ( struct _reent *_r )
 {
     assert(thread_lock_count >= 0);

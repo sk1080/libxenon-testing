@@ -116,7 +116,6 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/lwip/core/timers.o \
 	../../drivers/lwip/core/udp.o \
 	../../drivers/lwip/netif/etharp.o \
-	../../drivers/lwip/netif/loopif.o \
 	../../drivers/lwip/xenon/netif/enet.o \
 	../../drivers/lwip/xenon/src/lib.o \
 	../../drivers/lwip/xenon/src/sys_arch.o \
@@ -129,6 +128,7 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/threads/debug.o \
 	../../drivers/threads/c_debug.o \
 	../../drivers/threads/gdb.o \
+	../../drivers/threads/gdbroutines.o \
 	../../drivers/threads/mutex.o \
 	../../drivers/threads/cond.o \
 	../../drivers/libfdt/fdt_ro.o \

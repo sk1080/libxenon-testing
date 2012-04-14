@@ -11,7 +11,7 @@ BINUTILS_TAR=binutils-2.22
 BINUTILS=binutils-2.22
 GCC=gcc-4.6.1
 NEWLIB=newlib-1.17.0
-GDB=gdb-6.8
+GDB=gdb-7.4
 
 ZLIB=zlib-1.2.6
 LIBPNG=libpng-1.5.7
@@ -165,6 +165,32 @@ function toolchain_install
 
 	rm -rf build
 
+}
+
+function gdb_install
+{
+	mkdir build
+
+	# Check if gdb sources are available, download it if needed
+	if [ ! -f "$BINUTILS.tar.bz2" ]; then
+		echo -e "Downloading $GDB.tar.bz2"
+		wget -c http://ftp.gnu.org/gnu/gdb/$GDB.tar.bz2 || exit 0
+	fi;
+	
+	echo -e "Extracting gdb..."
+	tar xfj $GDB.tar.bz2 >> $LOGFILE 2>&1 && cat $GDB.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
+	
+	cd build
+	
+	../$GDB/configure --target=$TARGET --prefix=$PREFIX >> $LOGFILE 2>&1 || exit 0
+	
+	echo -e "Building gdb, this could take a while..."
+	
+	make $PARALLEL >> $LOGFILE 2>&1 || exit 0
+	make install >> $LOGFILE 2>&1 || exit 0
+	
+	rm -rf build
+	echo -e "Done"
 }
 
 function zlib_install
@@ -410,9 +436,12 @@ elif [ "$1" == "bin2s" ]; then
         bin2s_install
 elif [ "$1" == "cube" ]; then
 	cube
+elif [ "$1" == "gdb" ]; then
+	gdb_install
 else
 	echo -e "Usage:"
 	echo -e "\"$0 toolchain\" (install toolchain + libxenon)"
+	echo -e "\"$0 gdb\" (install gdb debugger)"
 	echo -e "\"$0 libs\" (install libxenon + bin2s + libraries seen below)"
 	echo -e "\"$0 libxenon\" (install or update libxenon)"
 	echo -e "\"$0 zlib\" (install or update zlib)"

@@ -762,6 +762,25 @@ PTHREAD thread_create(void* entrypoint, unsigned int stack_size,
     return pthr;
 }
 
+void thread_set_name(PTHREAD pthr, const char * name)
+{
+    //unsigned int irql = thread_spinlock(&ThreadListLock);
+    pthr->Name = name;
+    //thread_unlock(&ThreadListLock, irql);
+}
+
+PTHREAD thread_get_pool(int i)
+{
+	PTHREAD thread = NULL;
+    //unsigned int irql = thread_spinlock(&ThreadListLock);
+	if(i >= 0 && i < MAX_THREAD_COUNT)
+	{
+		thread = &ThreadPool[i];
+	}
+    //thread_unlock(&ThreadListLock, irql);
+	return thread;
+}
+
 void thread_set_processor(PTHREAD pthr, unsigned int processor)
 {
     unsigned int irql = thread_spinlock(&ThreadListLock);
@@ -1064,6 +1083,10 @@ unsigned int thread_idle_ipi(unsigned int context)
     return 0;
 }
 
+// xenon_syscalls.c
+extern void newlib_thread_init();
+extern void newlib_thread_shutdown();
+
 // Shuts down threading
 void threading_shutdown()
 {
@@ -1071,28 +1094,29 @@ void threading_shutdown()
             || thread_get_processor_block()->CurrentProcessor != 0)
         return;
 
+    newlib_thread_shutdown();
+
     thread_raise_irql(0x7C);
     thread_disable_interrupts();
 
     // Wait for pending ipis to clear
     lock(&ipi_lock);
-    
+
     // Tell everyone to shut down
     unsigned int ipi_count = 0;
     ipi_send_packet(thread_idle_ipi, 0,
             0x3F & ~(1 << thread_get_processor_block()->CurrentProcessor),
             &ipi_count);
-    
+
     // Wait for everyone to stop
     while(wait[2]);
     while(wait[4]);
     while(wait[6]);
     while(wait[8]);
     while(wait[10]);
-}
 
-// xenon_syscalls.c
-extern void newlib_thread_init();
+    threading_init_check = 0;
+}
 
 // Starts up threading
 void threading_init()
