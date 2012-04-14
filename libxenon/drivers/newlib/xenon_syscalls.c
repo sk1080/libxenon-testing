@@ -44,7 +44,7 @@ ssize_t vfs_console_write(struct _reent *r, int fd, const char *src, size_t len)
 #define XELL_FOOTER "xxxxxxxxxxxxxxxx"
 extern void return_to_xell(unsigned int nand_addr, unsigned int phy_loading_addr);
 
-
+extern void (*network_stdout_hook)(const char *buf, int len);
 extern void enet_quiesce();
 extern void usb_shutdown(void);
 
@@ -114,7 +114,15 @@ static void xenon_exit(int status) {
 	
 	// shutdown threading
 	threading_shutdown();
-
+	
+	// all threads are down remove syscall for lock and unlock
+	__syscalls.malloc_lock = NULL;
+	__syscalls.malloc_unlock = NULL;
+	
+	// network is down too
+	network_stdout_hook = NULL;
+	
+	
     sprintf(s, "[Exit] with code %d\n", status);
     vfs_console_write(NULL, 0, s, strlen(s));
 

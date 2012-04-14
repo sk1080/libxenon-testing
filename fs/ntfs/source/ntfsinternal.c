@@ -66,7 +66,7 @@ const INTERFACE_ID ntfs_disc_interfaces[] = {
 extern DISC_INTERFACE usb2mass_ops;
 const INTERFACE_ID ntfs_disc_interfaces[] = {
     { "uda", &usb2mass_ops },
-    { "ata", NULL },
+    { "sda", NULL },
     { NULL, NULL }
 };
 #endif
