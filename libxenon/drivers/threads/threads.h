@@ -163,7 +163,8 @@ typedef struct _THREAD
     // If we are waiting for a mutex
     // This is also used to signal if the mutex was acquired, if it is 1 when you wake up, it is not acquired
     unsigned char WaitingForMutex; // 0x265
-    unsigned char Reserved[2]; // 0x266
+    unsigned char WaitingInHandler; // 0x266
+    unsigned char Reserved[1]; // 0x267
     
     void *DebugData; // Just a pointer so you can stick whatever you want on the object // 0x268
     

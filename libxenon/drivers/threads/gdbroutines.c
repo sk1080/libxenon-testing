@@ -206,6 +206,9 @@ void resume_threads()
 		PTHREAD pthr = thread_get_pool(i);
 		if(pthr->Valid && pthr->ThreadId != thisthread)
 		{
+			if(pthr->WaitingInHandler)
+				pthr->WaitingInHandler = 0;
+
 			if(mode == 1 && pthr->Name)
 			{
 				//printf("We have a named thread: %s\n", pthr->Name);
@@ -272,6 +275,10 @@ void resume_threads_nolock()
 	for(i = 0; i < MAX_THREAD_COUNT; i++)
 	{
 		PTHREAD pthr = thread_get_pool(i);
+
+		if(pthr->WaitingInHandler)
+			pthr->WaitingInHandler = 0;
+
 		if(pthr->Valid)
 		{
 			if(mode == 1 && pthr->Name)

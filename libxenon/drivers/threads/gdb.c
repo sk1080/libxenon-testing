@@ -529,6 +529,7 @@ int parse_cmd(char * buffer)
 			{
 				ctrlthread = thread_get_pool(0);
 			}
+			//printf("Enabling single step at 0x%llX\n", pthr->Context.Iar);
 			pthr->Context.Msr |= 0x400;//Enable single step
 
 			active = 0;
@@ -813,6 +814,12 @@ int gdb_debug_routine(unsigned int code, CONTEXT *context)
 	halt_threads_nolock();
 
 	running = 0;
+
+	if(code == 5)
+	{
+		thread->WaitingInHandler = 1;
+		while(thread->WaitingInHandler);
+	}
 
     return 1;
 }
