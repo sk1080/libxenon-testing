@@ -522,6 +522,25 @@ int parse_cmd(char * buffer)
 			resume_threads();
 			break;
 		}
+		case 'S'://Step with signal
+		{
+			int val;
+			char * ptr = &buffer[1];
+			hexToInt(&ptr, &val);
+			signal = val;
+			PTHREAD pthr = ctrlthread;
+			if(pthr == NULL)
+			{
+				ctrlthread = thread_get_pool(0);
+			}
+			//printf("Enabling single step at 0x%llX\n", pthr->Context.Iar);
+			pthr->Context.Msr |= 0x400;//Enable single step
+
+			active = 0;
+			running = 1;
+			resume_threads();
+			break;
+		}
 		case 's'://step
 		{
 			PTHREAD pthr = ctrlthread;
