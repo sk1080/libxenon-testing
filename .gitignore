@@ -135,3 +135,9 @@ libxenon/ports/xenon/libxenon.a
 /devkitxenon/examples/xenon/file/browser/browser.elf
 /devkitxenon/examples/xenon/graphics/cube/cube.elf
 /devkitxenon/examples/xenon/graphics/cube/cube.elf32
+/toolchain/build/bfd/.deps/
+/toolchain/build/bfd/.libs/
+/toolchain/build/opcodes/.deps/
+/toolchain/build/opcodes/.libs/
+/toolchain/build/gdb/.deps/
+/toolchain/build/gdb/gnulib/.deps/

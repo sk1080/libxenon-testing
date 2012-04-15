@@ -108,6 +108,8 @@ bool fatMount (const char* name, const DISC_INTERFACE* interface, sec_t startSec
 	devops->deviceData = partition;
 
 	AddDevice (devops);
+	
+	printf("fat Mount %s\r\n",devops->name);
 
 	return true;
 }
