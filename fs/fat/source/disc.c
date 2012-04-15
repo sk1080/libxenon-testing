@@ -50,8 +50,8 @@ static const DISC_INTERFACE* get_io_usbstorage(void) {
 }
 
 const INTERFACE_ID _FAT_disc_interfaces[] = {
-	{"sda", &get_io_usbstorage},
-	{"uda", &get_io_ata},
+	{"uda", &get_io_usbstorage},
+	{"sda", &get_io_ata},
 	{NULL, NULL}
 };	
 

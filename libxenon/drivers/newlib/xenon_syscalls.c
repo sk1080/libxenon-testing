@@ -120,7 +120,7 @@ static void xenon_exit(int status) {
 	__syscalls.malloc_unlock = NULL;
 	
 	// network is down too
-	network_stdout_hook = NULL;
+	//network_stdout_hook = NULL;
 	
 	
     sprintf(s, "[Exit] with code %d\n", status);

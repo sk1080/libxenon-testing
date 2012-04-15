@@ -59,7 +59,7 @@ wii-debug:
 
 #clean: nds-clean gba-clean ogc-clean
 clean: 
-
+	$(MAKE) -C libxenon clean
 nds-clean:
 	$(MAKE) -C nds clean
 
