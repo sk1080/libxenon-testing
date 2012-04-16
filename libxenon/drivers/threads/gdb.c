@@ -368,19 +368,20 @@ int parse_cmd(char * buffer)
 		}
 		case 'H'://set the current thread
 		{
+			PTHREAD pthr = NULL;
+
 			char * ptr = &buffer[2];
 			int thread;
 			hexToInt(&ptr, &thread);
-			thread--; //Ghetto: gdb doesn't like thread id 0
-			if(thread < 0)
-				thread++;
-			PTHREAD pthr = thread_get_pool(thread);
-
+			int threadid = thread - 1; //Ghetto: gdb doesn't like thread id 0
+			if(threadid >= 0)
+			{
+				pthr = thread_get_pool(threadid);
+			}
 					if(buffer[1] == 'c')
 					{
 						if(thread == -1)
 						{
-							ctrlthread = NULL;
 							putpacket("OK");
 							break;
 						}
@@ -399,20 +400,9 @@ int parse_cmd(char * buffer)
 					{
 						if(thread == -1)
 						{
-							otherthread = NULL;
-							printf("WTF???");
 							putpacket("OK");
 							break;
 						}
-						if(thread == 0)
-						{
-								if(otherthread)
-								{
-									putpacket("OK");
-									break;
-								}
-						}
-
 
 						if(pthr)
 							if(pthr->Valid)
