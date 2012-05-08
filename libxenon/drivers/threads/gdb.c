@@ -380,7 +380,7 @@ int parse_cmd(char * buffer)
 			}
 					if(buffer[1] == 'c')
 					{
-						if(thread == -1)
+						if(thread == 0)
 						{
 							putpacket("OK");
 							break;
@@ -398,7 +398,7 @@ int parse_cmd(char * buffer)
 					}
 					if(buffer[1] == 'g')
 					{
-						if(thread == -1)
+						if(thread == 0)
 						{
 							putpacket("OK");
 							break;
