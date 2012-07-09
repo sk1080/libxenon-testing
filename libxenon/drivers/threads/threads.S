@@ -100,24 +100,23 @@ common_interrupt_return:
 // Takes a PROCESSOR_FPU_VPU_SAVE pointer on r3
 .globl save_floating_point
 save_floating_point:
-    // Save floating point (mffs) (stfdu)
     .irp reg, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
     stfd %r\reg, OFF_REG(\reg)(%r3)
     .endr
 
-    mffs %r4 // Status
-    stfd %r31, OFF_REG(31)(%r3)
+    mffs %r3 // Status
+    stfd %r3, OFF_REG(32)(%r3)
     blr
 
 // Takes a PROCESSOR_FPU_VPU_SAVE pointer on r3
 .globl restore_floating_point
 restore_floating_point:
-    .irp reg, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
+    lfd %r3, OFF_REG(32)(%r3)
+	mtfsf 0xFF, %r3
+
+    .irp reg, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
     lfd %r\reg, OFF_REG(\reg)(%r3)
     .endr
-    lfd %r31, OFF_REG(32)(%r3)
-    mtfsf 0xFF, %r31  // Status
-    lfd %r31, OFF_REG(31)(%r3)
     blr
 
 // GCC doesnt like vectors, so im commenting this out
