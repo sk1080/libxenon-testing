@@ -4,11 +4,11 @@
 
 #include <debug.h>
 #include <xenos/xenos.h>
-#include <diskio/dvd.h>
 #include <diskio/ata.h>
 #include <input/input.h>
 #include <console/console.h>
-#include <diskio/diskio.h>
+#include <diskio/disc_io.h>
+#include <sys/iosupport.h>
 #include <usb/usbmain.h>
 #include <time/time.h>
 #include <ppc/timebase.h>
@@ -16,8 +16,10 @@
 #include <elf/elf.h>
 #include <dirent.h>
 
-#include <libntfs/ntfs.h>
+
 #include <libfat/fat.h>
+
+int bdev_enum(int handle, const char **name);
 
 #define FG_COL -1
 #define BG_COL 0
@@ -98,14 +100,9 @@ printf("Main !!\r\n");
 	
 	
 
-	dvd_init();
+	xenon_atapi_init();
 	
-	printf("register ntfs\r\n");
-	ntfs_md * _ntfs_dev;
-	//ntfsMountAll(&_ntfs_dev,NTFS_READ_ONLY);
-	fatInitDefault ();
-	
-	printf("register ntfs ok\r\n");
+	fatInitDefault();
 
 	handle=-1;
     handle=bdev_enum(handle,&s);

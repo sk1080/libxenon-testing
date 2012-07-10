@@ -1094,7 +1094,6 @@ void threading_shutdown()
             || thread_get_processor_block()->CurrentProcessor != 0)
         return;
 
-    newlib_thread_shutdown();
 
     thread_raise_irql(0x7C);
     thread_disable_interrupts();
@@ -1173,9 +1172,6 @@ void threading_init()
     
     // Enable interrupts
     mtmsr(mfmsr() | 0x8000);
-	
-	// Init newlib malloc stuff
-	newlib_thread_init();	
     
     printf("All threads online!\n");
     

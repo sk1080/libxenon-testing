@@ -158,11 +158,7 @@ extern void (*stdout_hook)(const char *buf, int len);
 
 void console_init(void) {
 	console_initialized = 0;
-	if(!xenos_is_initialized()){
-		printf("You must initialize video before calling 'console_init'.\n");
-		return;
-	}
-	
+
 	struct ati_info *ai = (struct ati_info*)0xec806100ULL;
 
 	console_fb = (unsigned char*)(long)(ai->base | 0x80000000);

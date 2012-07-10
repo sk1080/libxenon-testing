@@ -33,7 +33,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,--gc-sections -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lntfs -lfat -lxenon -lm 
+LIBS	:=	-lxenon -lm -lfat
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -126,5 +126,6 @@ endif
 
 
 run: $(BUILD) $(OUTPUT).elf32
-	$(PREFIX)strip $(OUTPUT).elf32
 	cp $(OUTPUT).elf32 /srv/tftp/tftpboot/xenon
+	$(PREFIX)strip /srv/tftp/tftpboot/xenon
+#	/home/dev360/run

@@ -39,14 +39,16 @@ CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti -fpermissive -Wno-sign-compare -W
 AFLAGS = -Iinclude -m32 $(INCLUDES)
 
 LIBOBJS = crti.o crtn.o \
+	../../startup/xenon/argv.o \
 	../../startup/xenon/startup_from_xell.o \
 	../../startup/xenon/crt1.o \
 	../../drivers/console/console.o \
 	../../drivers/console/telnet_console.o \
+	../../drivers/diskio/ata.o \
+	../../drivers/iso9660/iso9660.o \
 	../../drivers/input/input.o \
 	../../drivers/newlib/newlib.o \
 	../../drivers/newlib/xenon_syscalls.o \
-	../../drivers/diskio/ata.o \
 	../../drivers/nocfe/lib_malloc.o \
 	../../drivers/nocfe/lib_queue.o \
 	../../drivers/pci/io.o \
@@ -57,6 +59,7 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/ppc/c_except.o \
 	../../drivers/ppc/vm.o \
 	../../drivers/time/time.o \
+	../../drivers/usb/dummy.o \
 	../../drivers/usb/ohci.o \
 	../../drivers/usb/usbctrl.o \
 	../../drivers/usb/usbd.o \
@@ -80,6 +83,7 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/xenon_uart/xenon_uart.o \
 	../../drivers/xenon_nand/xenon_sfcx.o \
 	../../drivers/xenon_nand/xenon_config.o \
+	../../drivers/xenon_post/xenon_post.o \
 	../../drivers/xenos/ucode.o \
 	../../drivers/xenos/edram.o \
 	../../drivers/xenos/xe.o \
@@ -164,21 +168,19 @@ libxenon.a: $(LIBOBJS)
 	ar rc $@ $(LIBOBJS)
 
 install: libxenon.a
-	test -d $(DEVKITXENON)/$(LIBDIR)/ || mkdir -p $(DEVKITXENON)/$(LIBDIR)/
-	test -d $(DEVKITXENON)/usr/include/ || mkdir -p $(DEVKITXENON)/usr/include/
-	test -d $(DEVKITXENON)/usr/include/lwip/ || mkdir -p $(DEVKITXENON)/usr/include/lwip/
-	test -d $(DEVKITXENON)/usr/include/netif/ || mkdir -p $(DEVKITXENON)/usr/include/netif/
-	test -d $(DEVKITXENON)/usr/include/arch/ || mkdir -p $(DEVKITXENON)/usr/include/arch/
-	test -d $(DEVKITXENON)/usr/include/sys/ || mkdir -p $(DEVKITXENON)/usr/include/sys/
-	test -d $(DEVKITXENON)/usr/include/machine/powerpc/machine/ || mkdir -p $(DEVKITXENON)/usr/include/machine/powerpc/machine/
-	test -d $(DEVKITXENON)/usr/include/machine/powerpc/sys/ || mkdir -p $(DEVKITXENON)/usr/include/machine/powerpc/sys/
-	install -m 0644 libxenon.a $(DEVKITXENON)/$(LIBDIR)/
+	mkdir -p $(DEVKITXENON)/usr/lib/
+	cp libxenon.a $(DEVKITXENON)/usr/lib/
+	mkdir -p $(DEVKITXENON)/usr/include/
+	mkdir -p $(DEVKITXENON)/usr/include/sys
 	cp -r ../../drivers/* $(DEVKITXENON)/usr/include/
 	cp -r ../../include/* $(DEVKITXENON)/usr/include/
+	mkdir -p $(DEVKITXENON)/usr/include/lwip/
 	cp ../../drivers/lwip/include/lwip/* $(DEVKITXENON)/usr/include/lwip/
 	cp ../../drivers/lwip/include/$(LWIP_MODE)/lwip/* $(DEVKITXENON)/usr/include/lwip/
 	cp ../../drivers/lwip/include/netif/* $(DEVKITXENON)/usr/include/netif/
-	cp ../../drivers/lwip/xenon/include/arch/* $(DEVKITXENON)/usr/include/arch/	
+	mkdir -p $(DEVKITXENON)/usr/include/arch/
+	cp ../../drivers/lwip/xenon/include/arch/* $(DEVKITXENON)/usr/include/arch/
+	mkdir -p $(DEVKITXENON)/usr/include/sys/
 	install -m 0775 ../../../devkitxenon/rules $(DEVKITXENON)/
 	install -m 0664 ../../../devkitxenon/app.lds $(DEVKITXENON)/
 	install -m 0664 ../../startup/xenon/crt1.o $(DEVKITXENON)/xenon/lib/

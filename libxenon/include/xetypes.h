@@ -1,7 +1,7 @@
 #ifndef __XETYPES_H__
 #define __XETYPES_H__
 
-//#include <stdbool.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -45,7 +45,6 @@ typedef unsigned long long lba_t;
 
 typedef unsigned int BOOL;
 #ifndef __cplusplus
-typedef unsigned int bool;
 #define false 0
 #define true 1
 #endif
@@ -78,6 +77,15 @@ typedef unsigned int bool;
 #endif /* BYTE_ORDER */
 /*+----------------------------------------------------------------------------------------------+*/
 
+struct __argv {
+	int magic;	// magic value to indicate a valid struct
+	int argc;	// count of arguments passed
+	char **argv;	// pointer array containing arguments
+};
+
+extern struct __argv * __system_argv;
+
+#define ARGV_MAGIC 0x5f617267
 
 #ifdef __cplusplus
    }
