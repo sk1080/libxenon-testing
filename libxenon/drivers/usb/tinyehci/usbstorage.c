@@ -99,6 +99,7 @@ static BOOL first_access = TRUE;
 
 typedef struct ehci_device_data{
 	struct ehci_hcd * __ehci;
+	struct ehci_device * __dev;
 	usbstorage_handle __usbfd;
 	
 	u16 __vid;
@@ -640,7 +641,7 @@ static usb_devdesc _old_udd; // used for device change protection
 
 s32 try_status = 0;
 
-s32 USBStorage_Open(struct ehci_hcd * ehci, usbstorage_handle *dev, struct ehci_device *fd) {
+s32 USBStorage_Open(ehci_device_data * device_data) {
 	s32 retval = -1;
 	u8 conf, *max_lun = NULL;
 	u32 iConf, iInterface, iEp;
@@ -649,7 +650,9 @@ s32 USBStorage_Open(struct ehci_hcd * ehci, usbstorage_handle *dev, struct ehci_
 	usb_interfacedesc *uid;
 	usb_endpointdesc *ued;
 	
-	ehci_device_data * device_data = find_ehci_data(ehci);
+	struct ehci_hcd * ehci = device_data->__ehci;
+	usbstorage_handle *dev = &device_data->__usbfd;
+	struct ehci_device *fd = device_data->__dev;
 
 	device_data->__lun = 16; // select bad LUN
 
@@ -1084,14 +1087,16 @@ s32 USBStorage_Read_Stress(u32 sector, u32 numSectors, void *buffer) {
 
 // temp function before libfat is available */
 
-s32 USBStorage_Try_Device(struct ehci_hcd * ehci, struct ehci_device *fd) {
+s32 USBStorage_Try_Device(ehci_device_data * device_data) {
+	struct ehci_hcd * ehci; struct ehci_device *fd;
 	int maxLun, j, retval;
 	int test_max_lun = 1;
 	
-	ehci_device_data * device_data = find_ehci_data(ehci);
+	ehci = device_data->__ehci;
+	fd = device_data->__dev;
 
 	try_status = -120;
-	if (USBStorage_Open(ehci, &device_data->__usbfd, fd) < 0)
+	if (USBStorage_Open(device_data) < 0)
 		return -EINVAL;
 
 	/*
@@ -1154,7 +1159,6 @@ s32 USBStorage_Try_Device(struct ehci_hcd * ehci, struct ehci_device *fd) {
 		device_data->__pid = fd->desc.idProduct;
 		device_data->__mounted = 1;
 		device_data->__lun = j;
-		device_data->__ehci = ehci;// already made
 		usb_timeout = 1000 * 1000;
 		try_status = 0;
 		return 0;
@@ -1212,6 +1216,7 @@ s32 USBStorage_Init(void) {
 	if (ums_init_done)
 		return 0;
 
+	_ehci_device_count = 0;
 	init_ehci_device_struct();
 	
 	struct ehci_hcd *ehci = &ehci_hcds[0];
@@ -1230,9 +1235,15 @@ retry:
 				handshake_mode = 1;
 				if (ehci_reset_port(ehci, i) >= 0) {
 
-					ehci_device_data * device_data = find_ehci_data(ehci);
+					//ehci_device_data * device_data = find_ehci_data(ehci);
 					
-					if (USBStorage_Try_Device(ehci, dev) == 0) {
+					ehci_device_data * device_data = &_ehci_data[_ehci_device_count];
+					device_data->__ehci = ehci;
+					device_data->__dev = dev;
+					
+					if (USBStorage_Try_Device(device_data) == 0) {
+						_ehci_device_count++;
+						
 						printf("EHCI bus %d device %d: vendor %04X product %04X : Mass-Storage Device\n", j, dev->id, device_data->__vid, device_data->__pid);
 
 						first_access = TRUE;
@@ -1301,7 +1312,7 @@ int unplug_procedure(int device) {
 
 				if (ehci_reset_port(_ehci_data[device].__ehci, 0) >= 0) {
 					handshake_mode = 1;
-					if (USBStorage_Try_Device(_ehci_data[device].__ehci, _ehci_data[device].__usbfd.usb_fd) == 0) {
+					if (USBStorage_Try_Device(&_ehci_data[device]) == 0) {
 						retval = 0;
 						unplug_device = 0;
 					}
