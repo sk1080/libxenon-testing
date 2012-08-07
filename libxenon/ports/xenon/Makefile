@@ -177,6 +177,7 @@ install: libxenon.a
 	mkdir -p $(DEVKITXENON)/usr/include/lwip/
 	cp ../../drivers/lwip/include/lwip/* $(DEVKITXENON)/usr/include/lwip/
 	cp ../../drivers/lwip/include/$(LWIP_MODE)/lwip/* $(DEVKITXENON)/usr/include/lwip/
+	mkdir -p $(DEVKITXENON)/usr/include/netif/
 	cp ../../drivers/lwip/include/netif/* $(DEVKITXENON)/usr/include/netif/
 	mkdir -p $(DEVKITXENON)/usr/include/arch/
 	cp ../../drivers/lwip/xenon/include/arch/* $(DEVKITXENON)/usr/include/arch/
