@@ -382,12 +382,21 @@ PTHREAD thread_schedule_core()
         if((pthr->Priority + pthr->PriorityBoost)
             > (winThread->Priority + winThread->PriorityBoost))
             winThread = pthr;
-        else if(pthr->PriorityBoost < pthr->MaxPriorityBoost)
-            pthr->PriorityBoost++; // Boost the priority if need be
         
         pthr = pthr->NextThreadReady;
     } while(pthr != readyList.FirstThread);
     
+    //Apply a priority boost to all threads that didn't win
+    pthr = readyList.FirstThread;
+    do
+    {
+    	if(pthr != winThread)
+    		if(pthr->MaxPriorityBoost > pthr->PriorityBoost)
+    			pthr->PriorityBoost++;
+
+        pthr = pthr->NextThreadReady;
+    } while(pthr != readyList.FirstThread);
+
     return winThread;
 }
 
