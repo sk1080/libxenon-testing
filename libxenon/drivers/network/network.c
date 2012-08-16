@@ -127,7 +127,7 @@ void network_init_sys()
         PTHREAD npthr = thread_create(network_poll_thr, 0, 0, 0);
         thread_set_name(npthr, "poll_thread");
         thread_set_processor(npthr, 5);
-        thread_set_priority(npthr, 15);
+        //thread_set_priority(npthr, 15);
         thread_close(npthr);
 
 	printf(" * requesting dhcp...");
