@@ -712,7 +712,7 @@ PTHREAD thread_create(void* entrypoint, unsigned int stack_size,
     if(stack_size & 0x3FF)
         stack_size = (stack_size & 0xFFFFFC00) + 0x1000;
 	
-    stack = (char*)malloc(stack_size);
+    stack = (char*)memalign(16, stack_size);
 	
 	// Lock the processor
     irql = thread_spinlock(&processor->Lock);
