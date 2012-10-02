@@ -1,10 +1,10 @@
-CROSS=xenon-
-CC=$(CROSS)gcc
-CXX=$(CROSS)g++
-OBJCOPY=$(CROSS)objcopy
-LD=$(CROSS)ld
-AS=$(CROSS)as
-STRIP=$(CROSS)strip
+CROSS=xenon
+CC=$(CROSS)-gcc
+CXX=$(CROSS)-g++
+OBJCOPY=$(CROSS)-objcopy
+LD=$(CROSS)-ld
+AS=$(CROSS)-as
+STRIP=$(CROSS)-strip
 
 prefix:=$(DEVKITXENON)
 LIBDIR:=usr/lib
@@ -21,7 +21,6 @@ INCLUDES = -I ../../drivers -I ../../include \
 	-I ../../drivers/nocfe \
 	-I ../../drivers/lwip/include/ -I ../../drivers/lwip/xenon/include/ -I ../../drivers/lwip/include/$(LWIP_MODE)/
 
-
 CFLAGS = -g -mcpu=cell -mtune=cell -Os \
 	-maltivec \
 	-ffunction-sections -fno-builtin-printf -fdata-sections \
@@ -33,8 +32,8 @@ CFLAGS = -g -mcpu=cell -mtune=cell -Os \
 # we need to fix the toolchain to work with multilib here.
 LIBDIR32 = $(DEVKITXENON)/xenon/lib/32/
 
-CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti -fpermissive -Wno-sign-compare -Werror=int-to-pointer-cast \
-	-Werror=pointer-to-int-cast -Wno-unknown-pragmas  -Wno-unused-value -Wno-unused-variable
+CXXFLAGS = $(CFLAGS) -fpermissive -Wno-sign-compare -Werror=int-to-pointer-cast \
+	-Werror=pointer-to-int-cast -Wno-unknown-pragmas  -Wno-unused-value -Wno-unused-variable 
 
 AFLAGS = -Iinclude -m32 $(INCLUDES)
 
@@ -71,9 +70,9 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/usb/usbmass.o \
 	../../drivers/usb/tinyehci/usb_os.o \
 	../../drivers/usb/tinyehci/tinyehci.o \
-	../../drivers/utils/unicode_rb.o \
 	../../drivers/utils/debug.o \
 	../../drivers/utils/gmon.o \
+	../../drivers/utils/mf-simplecheck.o \
 	../../drivers/xenon_smc/xenon_gpio.o \
 	../../drivers/xenon_smc/xenon_smc.o \
 	../../drivers/xenon_soc/cpusleep.o \
@@ -143,7 +142,7 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/libfdt/fdt_wip.o
 
 # Build rules
-all: $(TARGETS)
+all: libxenon.a
 
 clean:
 	rm -rf $(OBJS) $(LIBOBJS) libxenon.a
@@ -169,22 +168,23 @@ libxenon.a: $(LIBOBJS)
 
 install: libxenon.a
 	mkdir -p $(DEVKITXENON)/usr/lib/
-	cp libxenon.a $(DEVKITXENON)/usr/lib/
 	mkdir -p $(DEVKITXENON)/usr/include/
 	mkdir -p $(DEVKITXENON)/usr/include/sys
+	mkdir -p $(DEVKITXENON)/usr/include/lwip/
+	mkdir -p $(DEVKITXENON)/usr/include/netif/
+	mkdir -p $(DEVKITXENON)/usr/include/arch/
+	mkdir -p $(DEVKITXENON)/usr/include/sys/
+	mkdir -p $(DEVKITXENON)/$(CROSS)/lib/
 	cp -r ../../drivers/* $(DEVKITXENON)/usr/include/
 	cp -r ../../include/* $(DEVKITXENON)/usr/include/
-	mkdir -p $(DEVKITXENON)/usr/include/lwip/
-	cp ../../drivers/lwip/include/lwip/* $(DEVKITXENON)/usr/include/lwip/
-	cp ../../drivers/lwip/include/$(LWIP_MODE)/lwip/* $(DEVKITXENON)/usr/include/lwip/
-	mkdir -p $(DEVKITXENON)/usr/include/netif/
-	cp ../../drivers/lwip/include/netif/* $(DEVKITXENON)/usr/include/netif/
-	mkdir -p $(DEVKITXENON)/usr/include/arch/
-	cp ../../drivers/lwip/xenon/include/arch/* $(DEVKITXENON)/usr/include/arch/
-	mkdir -p $(DEVKITXENON)/usr/include/sys/
-	install -m 0775 ../../../devkitxenon/rules $(DEVKITXENON)/
+	install -m 0664 ../../drivers/lwip/include/lwip/* $(DEVKITXENON)/usr/include/lwip/
+	install -m 0664 ../../drivers/lwip/include/$(LWIP_MODE)/lwip/* $(DEVKITXENON)/usr/include/lwip/
+	install -m 0664 ../../drivers/lwip/include/netif/* $(DEVKITXENON)/usr/include/netif/
+	install -m 0664 ../../drivers/lwip/xenon/include/arch/* $(DEVKITXENON)/usr/include/arch/
 	install -m 0664 ../../../devkitxenon/app.lds $(DEVKITXENON)/
-	install -m 0664 ../../startup/xenon/crt1.o $(DEVKITXENON)/xenon/lib/
-	install -m 0664 crti.o $(DEVKITXENON)/xenon/lib/
-	install -m 0664 crtn.o $(DEVKITXENON)/xenon/lib/
+	install -m 0664 ../../startup/xenon/crt1.o $(DEVKITXENON)/$(CROSS)/lib/
+	install -m 0664 crti.o $(DEVKITXENON)/$(CROSS)/lib/
+	install -m 0664 crtn.o $(DEVKITXENON)/$(CROSS)/lib/
+	install -m 0664 libxenon.a $(DEVKITXENON)/usr/lib/
+	install -m 0775 ../../../devkitxenon/rules $(DEVKITXENON)/
 	find $(DEVKITXENON)/usr/include/ -type f \! -name "*.h" -delete

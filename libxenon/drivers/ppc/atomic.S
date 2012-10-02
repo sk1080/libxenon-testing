@@ -1,3 +1,4 @@
+#include "xenonsprs.h"
 
 	// Taken from: http://www.ibm.com/developerworks/library/pa-atom/ 
 .globl atomic_inc
@@ -27,49 +28,34 @@ atomic_clearset:
 	stwcx. %r6, 0, %r3
 	bne-   1b
 	blr
-.globl atomic_compareswap
-atomic_compareswap:
-        li     %r7, 0
-        mfmsr  %r8
-1:
-        mtmsrd %r7, 1 // Turn off interrupts
-        lwarx  %r6, 0, %r3
-        mr     %r9, %r6 // Save value in r9
-        cmplwi cr7, %r6, %r5
-        bne    cr7, 2f
-        mr     %r6, %r4
-2:
-        stwcx. %r6, 0, %r3
-        mtmsrd %r8, 1 // Restore them to what they were before
-        bne    1b // If unable to store, retry
-        mr     %r3, %r9
-        lwsync
-        blr
 
-	// thanks cOz for the following :)
+// thanks cOz for the following :)
 .globl lock
 lock:
         li      %r8, 0
 1:
         mfmsr   %r7
-        mtmsrd  %r8, 1 // Disable interrupts
+		mtmsrd  %r8, 1
         lwarx   %r4, 0, %r3
         cmplwi  cr7, %r4, 0
-        bne     cr7, 2f // If r4 is not zero, dont modify
-        mr      %r4, %r3
+        bne     cr7, 2f
+		mr      %r4, %r3
 2:
         stwcx.  %r4, 0, %r3
-        mtmsrd  %r7, 1 // Restore interrupts
-        bne     cr7, 3f // r4 was not zero, lock again
-        bne     3f // Reservation invalid, lock again
+        mtmsrd  %r7, 1
+        bne     cr7, 2f
+        bne     2f
         lwsync
         blr
-3:
+2:
         db16cyc
-        b       1b
+        b 1b
+ 
 .globl unlock
 unlock:
         li      %r4, 0
-        lwsync
+        sync    1  // lwsync
         stw     %r4, 0(%r3)
+        li      %r4, -1
+        mtspr   hdec, %r4 // reset the hypervisor decrementer to fix a lock issue
         blr

@@ -139,7 +139,7 @@ after_slb:
         li %r4, 2
         stb %r4, 0x141(%r3) // Irq
 
-	lis %r3,8
+	lis %r3,32
 	subf %r1, %r3, %r1
 
 		/* wake up secondary thread */

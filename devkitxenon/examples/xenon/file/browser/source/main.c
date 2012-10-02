@@ -16,7 +16,6 @@
 #include <elf/elf.h>
 #include <dirent.h>
 
-
 #include <libfat/fat.h>
 
 int bdev_enum(int handle, const char **name);
@@ -30,9 +29,6 @@ int bdev_enum(int handle, const char **name);
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define MIN(a,b) (((a)<(b))?(a):(b))
-
-
-
 
 struct dirent entries[MAX_FILES];
 int entrycount=0;
@@ -81,7 +77,6 @@ void append_dir_to_path(char * path,char * dir){
 }
 
 int main(){
-printf("Main !!\r\n");
 	const char * s;
 	char path[256];
 	
@@ -91,14 +86,13 @@ printf("Main !!\r\n");
 
 	xenos_init(VIDEO_MODE_AUTO);
 	console_init();
-		xenon_make_it_faster(XENON_SPEED_FULL);
+
+	xenon_make_it_faster(XENON_SPEED_FULL);
 	
 	usb_init();
 	usb_do_poll();
 	
 	xenon_ata_init();
-	
-	
 
 	xenon_atapi_init();
 	
@@ -167,7 +161,7 @@ printf("Main !!\r\n");
 			}
 		}
 		
-		if(pad.select){
+		if(pad.back){
 			append_dir_to_path(path,"..");
 			load_dir(path);
 			ppos=-1;
@@ -221,7 +215,7 @@ printf("Main !!\r\n");
 		do{
 	 		usb_do_poll();		
 			get_controller_data(&pad, 0);
-		}while(pad.a || pad.b || pad.select || pad.s1_y>STICK_THRESHOLD || pad.s1_y<-STICK_THRESHOLD);
+		}while(pad.a || pad.b || pad.back || pad.s1_y>STICK_THRESHOLD || pad.s1_y<-STICK_THRESHOLD);
 	}
 	
 	
