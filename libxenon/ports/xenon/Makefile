@@ -6,10 +6,6 @@ LD=$(CROSS)-ld
 AS=$(CROSS)-as
 STRIP=$(CROSS)-strip
 
-prefix:=$(DEVKITXENON)
-LIBDIR:=usr/lib
-INCLUDEDIR:=usr/include
-
 ifeq ($(strip $(DEVKITXENON)),)
 $(error "please set DEVKITXENON")
 endif

@@ -17,7 +17,7 @@ SECTIONS
 	.gcc_except_table :  { *(.gcc_except_table .gcc_except_table.*) }
 
 	bss_start = .;
-	.bss : { *(.bss*) }
+	.bss : { *(.bss.beginning.lower); *(.bss.beginning.upper); *(.bss*) }
 	.sbss : { *(.sbss .sbss.*) }
 	bss_end = .;
 

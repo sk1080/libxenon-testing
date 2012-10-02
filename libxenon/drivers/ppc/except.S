@@ -16,6 +16,8 @@
 #define REG_DAR 38
 #define REG_PIR 39
 
+#define HV_CONTEXT_SIZE 0x400
+
 .extern pagetable
 
 .globl exc_base
@@ -858,7 +860,7 @@ dump:
 .globl dump_from_pagefault
 dump_from_pagefault:
 	mfsprg1 %r31
-	addi %r8,%r31,0x200 /* move to next context in stack in case there's nested segfaults */
+	addi %r8,%r31,HV_CONTEXT_SIZE /* move to next context in stack in case there's nested segfaults */
 	mtsprg1 %r8
 	
 	mfsrr0 %r4
@@ -883,7 +885,7 @@ dump_from_pagefault:
 
 	mr %r30,%r3
 	mr %r3,%r31
-	li %r4,0x200
+	li %r4,HV_CONTEXT_SIZE
 	bl memdcbf
 	mr %r3,%r30
 
