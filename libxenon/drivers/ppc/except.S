@@ -16,8 +16,6 @@
 #define REG_DAR 38
 #define REG_PIR 39
 
-#define HV_CONTEXT_SIZE 0x400
-
 .extern pagetable
 
 .globl exc_base
@@ -61,9 +59,9 @@ debug_lock:
 	mtsrr1  %r8
 	rfid
 
-//DO_EXCEPT(0x00000100, ex_reset);
 DO_EXCEPT(0x00000200, ex_machine_check);
-//DO_EXCEPT(0x00000300, ex_data_storage);
+
+//ex_data_storage:
 . = exc_base + 0x300
     mtsprg0 %r31
     mfsprg1 %r31
@@ -94,7 +92,8 @@ DO_EXCEPT(0x00000200, ex_machine_check);
     b ex_data_storage
 
 DO_EXCEPT(0x00000380, ex_data_segment);
-//DO_EXCEPT(0x00000400, ex_instruction_storage);
+
+//ex_instruction_storage:
 . = exc_base + 0x400
     mtsprg0 %r31
     mfsprg1 %r31
@@ -126,9 +125,8 @@ DO_EXCEPT(0x00000380, ex_data_segment);
 
 DO_EXCEPT(0x00000480, ex_instruction_segment);
 
-//DO_EXCEPT(0x00000500, ex_external);
+//ex_external:
 . = exc_base + 0x500
-ex_external:
         // Save registers
         mtsprg0 %r13
         mfspr %r13, hsprg0 // Put the processor data block on r13
@@ -174,7 +172,8 @@ ex_external:
         rfid
 
 DO_EXCEPT(0x00000600, ex_alignment);
-//DO_EXCEPT(0x00000700, ex_program);
+
+//ex_program:
 . = exc_base + 0x700
         // Save registers
         mtsprg0 %r13
@@ -222,9 +221,8 @@ DO_EXCEPT(0x00000600, ex_alignment);
 
 DO_EXCEPT(0x00000800, ex_fpu_unavailable);
 
-//DO_EXCEPT(0x00000900, ex_decrementer);
+//ex_decrementer:
 . = exc_base + 0x900
-ex_decrementer:
         // Save registers
         mtsprg0 %r13
         mfspr %r13, hsprg0 // Put the processor data block on r13
@@ -269,19 +267,19 @@ ex_decrementer:
         // Launch handler
         rfid
 
-//DO_EXCEPT(0x00000980, ex_hypervisor_decrementer);
+//ex_hypervisor_decrementer:
 . = exc_base + 0x980
-ex_hypervisor_decrementer:
-        hrfid
-        mtsprg0 %r4
-	lis %r4, 0x7FFF
-	ori %r4, %r4, 0xFFFF
-	mtspr hdec, %r4
-        mfsprg0 %r4
-        hrfid
+    //hrfid
+    mtsprg0 %r4
+    lis %r4, 0x7FFF
+    ori %r4, %r4, 0xFFFF
+    mtspr hdec, %r4
+    mfsprg0 %r4
+    hrfid
 
 DO_EXCEPT(0x00000A00, ex_reserved);
-//DO_EXCEPT(0x00000C00, ex_system_call);
+
+//ex_system_call:
 . = exc_base + 0xC00
         // Save registers
         mtsprg0 %r13
@@ -327,7 +325,7 @@ DO_EXCEPT(0x00000A00, ex_reserved);
         // Launch handler
         rfid
 
-//DO_EXCEPT(0x00000D00, ex_trace);
+//ex_trace:
 . = exc_base + 0xD00
         // Save registers
         mtsprg0 %r13
@@ -373,79 +371,79 @@ DO_EXCEPT(0x00000A00, ex_reserved);
         // Launch handler
         rfid
 
-//DO_EXCEPT(0x00000E00, ex_fpu_assist);
+//ex_fpu_assist:
 . = exc_base + 0xE00
 ex_fpu_assist:
-        addi %r3, %r3, 0x80
-        bdnz+ _fpu_assist_loop
+    addi %r3, %r3, 0x80
+    bdnz+ _fpu_assist_loop
 _fpu_assist_exit:
-        sync
-        isync
-	blr
+    sync
+    isync
+    blr
 _fpu_assist_loop:
-        dcbst %r0, %r3
-        icbi %r0, %r3
-        addi %r3, %r3, 0x80
-        bdnz+ _fpu_assist_loop
-        b _fpu_assist_exit
+    dcbst %r0, %r3
+    icbi %r0, %r3
+    addi %r3, %r3, 0x80
+    bdnz+ _fpu_assist_loop
+    b _fpu_assist_exit
 
 DO_EXCEPT(0x00000F20, ex_vpu_unavailable);
-DO_EXCEPT(0x00001600, ex_maintenance);
-DO_EXCEPT(0x00001700, ex_vmx_assist);
-DO_EXCEPT(0x00001800, ex_thermal_management);
 
-//1a8: 0000000000007f85 00000000ea0000ac 000000007f8xxxxx (l=1) -> 00000000ea000000, N=1, WIMG=5, pp=0, lp=0
+DO_EXCEPT(0x00001600, ex_maintenance);
+
+DO_EXCEPT(0x00001700, ex_vmx_assist);
+
+DO_EXCEPT(0x00001800, ex_thermal_management);
 
 ex_machine_check:
 	b dump
 
 ex_data_storage:
+    // Save 1,7-12,14,16-30
+    .irp reg, 1,7,8,9,10,11,12,14,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
+    std %r\reg, OFF_REG(\reg)(%r31)
+    .endr
 
-        // Save 1,7-12,14,16-30
-        .irp reg, 1,7,8,9,10,11,12,14,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
-        std %r\reg, OFF_REG(\reg)(%r31)
-        .endr
+    mfdar %r3 // get faulting address
+    rldicl %r4, %r3, 36, 60 // extract high nibble (right aligned)
 
-	mfdar %r3 // get faulting address
-        rldicl %r4, %r3, 36, 60 // extract high nibble (right aligned)
+    sldi %r4, %r4, 2 /* address pagetable */
+    addis %r4, %r4, pagetable@h - 0x80000000 
+    lwz %r4, pagetable@l(%r4) /* load physical addr & attribs */
 
-	sldi %r4, %r4, 2 /* address pagetable */
-	addis %r4, %r4, pagetable@h - 0x80000000 
-	lwz %r4, pagetable@l(%r4) /* load physical addr & attribs */
+    cmpldi %r4, 0
+    bne 1f
 
-	cmpldi %r4, 0
-	bne 1f
+    // Invalid page, segfault here
+    mfdsisr %r4
+    rldicl %r4, %r4, 39, 63 // Put write into r4
 
-        // Invalid page, segfault here
-        mfdsisr %r4
-        rldicl %r4, %r4, 39, 63 // Put write into r4
+    // Setup the MSR
+    lis %r5, 0x1000
+    sldi %r5, %r5, 32 // Hypervisor Mode
+    ori %r5, %r5, 0x3030 // Data/Instruction relocate/Machine Check/FPU
+    oris %r5, %r5, 0x200 // VPU
+    mtsrr1 %r5
 
-        // Setup the MSR
-        lis %r5, 0x1000
-        sldi %r5, %r5, 32 // Hypervisor Mode
-        ori %r5, %r5, 0x3030 // Data/Instruction relocate/Machine Check/FPU
-        oris %r5, %r5, 0x200 // VPU
-        mtsrr1 %r5
+    // Put handler in Iar
+    lis %r5, segfault_handler@h
+    ori %r5, %r5, segfault_handler@l
+    mtsrr0 %r5
 
-        // Put handler in Iar
-        lis %r5, segfault_handler@h
-        ori %r5, %r5, segfault_handler@l
-        mtsrr0 %r5
+    // Put return in Lr
+    lis %r5, common_interrupt_return@h
+    ori %r5, %r5, common_interrupt_handler@l
+    mtlr %r5
 
-        // Put return in Lr
-        lis %r5, common_interrupt_return@h
-        ori %r5, %r5, common_interrupt_handler@l
-        mtlr %r5
+    // Point r5 to the context
+    addis %r5, %r31, 0x8000
 
-        // Point r5 to the context
-        addis %r5, %r31, 0x8000
+    // Push the context stack up by 0x200 bytes
+    addi %r31, %r31, 0x200
+    mtsprg1 %r31
 
-        // Push the context stack up by 0x200 bytes
-        addi %r31, %r31, 0x200
-        mtsprg1 %r31
-
-        // Handle it!
-        rfid
+    // Handle it!
+    rfid
 
 1:
 	cmpwi %r4, -1
@@ -620,19 +618,10 @@ ex_instruction_segment:
 ex_alignment:
 	b dump
 
-ex_program:
-	b dump
-
 ex_fpu_unavailable:
 	b dump
 
 ex_reserved:
-	b dump
-
-ex_system_call:
-	b dump
-
-ex_trace:
 	b dump
 
 ex_vpu_unavailable:
@@ -646,8 +635,6 @@ ex_vmx_assist:
 
 ex_thermal_management:
 	b dump
-
-
 
 user_page_handler:
 	mr %r15, %r3
@@ -770,145 +757,6 @@ user_page_handler:
         // Return
         rfid
 
-user_segfault_handler:
-	lis %r9,vm_segfault_handler@ha - 0x80000000
-	lwz %r9,vm_segfault_handler@l(%r9)
-
-	li %r3,0
-	cmplwi %r9,0
-	beq dump_from_pagefault // no user handler -> call system handler
-
-	/*
-	calling user code can throw exceptions,
-	to preserve original HV context base I increment context pointer before calling user
-	and decrement it after, to create a sort of context stack
-	*/
-
-	mfsprg1 %r31
-	mfsrr0 %r4
-	std %r4, OFF_REG(REG_SRR0)(%r31)
-	mfsrr1 %r4
-	std %r4, OFF_REG(REG_SRR1)(%r31)
-	mfsprg0 %r4
-	std %r4, OFF_REG(31)(%r31)
-
-	mfmsr %r5
-	ori %r5, %r5, 0x2000 // FP available
-	mtmsr %r5
-
-	stfd %f0, OFF_FPREG(0)(%r31)
-	stfd %f1, OFF_FPREG(1)(%r31)
-	stfd %f2, OFF_FPREG(2)(%r31)
-	stfd %f3, OFF_FPREG(3)(%r31)
-	stfd %f4, OFF_FPREG(4)(%r31)
-	stfd %f5, OFF_FPREG(5)(%r31)
-	stfd %f6, OFF_FPREG(6)(%r31)
-	stfd %f7, OFF_FPREG(7)(%r31)
-	stfd %f8, OFF_FPREG(8)(%r31)
-	stfd %f9, OFF_FPREG(9)(%r31)
-	stfd %f10, OFF_FPREG(10)(%r31)
-	stfd %f11, OFF_FPREG(11)(%r31)
-	stfd %f12, OFF_FPREG(12)(%r31)
-	stfd %f13, OFF_FPREG(13)(%r31)
-	stfd %f14, OFF_FPREG(14)(%r31)
-	stfd %f15, OFF_FPREG(15)(%r31)
-	stfd %f16, OFF_FPREG(16)(%r31)
-	stfd %f17, OFF_FPREG(17)(%r31)
-	stfd %f18, OFF_FPREG(18)(%r31)
-	stfd %f19, OFF_FPREG(19)(%r31)
-	stfd %f20, OFF_FPREG(20)(%r31)
-	stfd %f21, OFF_FPREG(21)(%r31)
-	stfd %f22, OFF_FPREG(22)(%r31)
-	stfd %f23, OFF_FPREG(23)(%r31)
-	stfd %f24, OFF_FPREG(24)(%r31)
-	stfd %f25, OFF_FPREG(25)(%r31)
-	stfd %f26, OFF_FPREG(26)(%r31)
-	stfd %f27, OFF_FPREG(27)(%r31)
-	stfd %f28, OFF_FPREG(28)(%r31)
-	stfd %f29, OFF_FPREG(29)(%r31)
-	stfd %f30, OFF_FPREG(30)(%r31)
-	stfd %f31, OFF_FPREG(31)(%r31)
-
-	mfsprg1 %r8
-	addi %r8,%r8,HV_CONTEXT_SIZE
-	mtsprg1 %r8
-	
-	mfpir %r3
-	mfsrr0 %r4
-	mfdar %r5
-	
-	mfmsr %r8
-
-	lis %r10, sfh32@h
-	ori %r10, %r10, sfh32@l
-	mtsrr0 %r10
-	rfid
-
-sfh32:
-	mtsprg3 %r8
-
-	mtctr %r9 
-	bctrl
-
-	mfsprg3 %r4
-	mtsrr1 %r4
-	
-	lis %r4, sfh64@h - 0x80000000
-	ori %r4, %r4, sfh64@l
-	mtsrr0 %r4
-	rfid
-
-sfh64:
-	mfsprg1 %r8
-	subi %r8,%r8,HV_CONTEXT_SIZE
-	mtsprg1 %r8
-
-	mfsprg1 %r31
-
-	lfd %f0, OFF_FPREG(0)(%r31)
-	lfd %f1, OFF_FPREG(1)(%r31)
-	lfd %f2, OFF_FPREG(2)(%r31)
-	lfd %f3, OFF_FPREG(3)(%r31)
-	lfd %f4, OFF_FPREG(4)(%r31)
-	lfd %f5, OFF_FPREG(5)(%r31)
-	lfd %f6, OFF_FPREG(6)(%r31)
-	lfd %f7, OFF_FPREG(7)(%r31)
-	lfd %f8, OFF_FPREG(8)(%r31)
-	lfd %f9, OFF_FPREG(9)(%r31)
-	lfd %f10, OFF_FPREG(10)(%r31)
-	lfd %f11, OFF_FPREG(11)(%r31)
-	lfd %f12, OFF_FPREG(12)(%r31)
-	lfd %f13, OFF_FPREG(13)(%r31)
-	lfd %f14, OFF_FPREG(14)(%r31)
-	lfd %f15, OFF_FPREG(15)(%r31)
-	lfd %f16, OFF_FPREG(16)(%r31)
-	lfd %f17, OFF_FPREG(17)(%r31)
-	lfd %f18, OFF_FPREG(18)(%r31)
-	lfd %f19, OFF_FPREG(19)(%r31)
-	lfd %f20, OFF_FPREG(20)(%r31)
-	lfd %f21, OFF_FPREG(21)(%r31)
-	lfd %f22, OFF_FPREG(22)(%r31)
-	lfd %f23, OFF_FPREG(23)(%r31)
-	lfd %f24, OFF_FPREG(24)(%r31)
-	lfd %f25, OFF_FPREG(25)(%r31)
-	lfd %f26, OFF_FPREG(26)(%r31)
-	lfd %f27, OFF_FPREG(27)(%r31)
-	lfd %f28, OFF_FPREG(28)(%r31)
-	lfd %f29, OFF_FPREG(29)(%r31)
-	lfd %f30, OFF_FPREG(30)(%r31)
-	lfd %f31, OFF_FPREG(31)(%r31)
-
-	cmplwi %r3,0
-	bne 1f
-	ld %r3, OFF_REG(REG_SRR0)(%r31)
-1:
-	mtsrr0 %r3
-	ld %r3, OFF_REG(REG_SRR1)(%r31)
-	mtsrr1 %r3
-	ld %r3, OFF_REG(31)(%r31)
-	mtsprg0 %r3
-        b except_return
-
 except_savevars:
         std %r0, OFF_REG(0)(%r31)
         std %r1, OFF_REG(1)(%r31)
@@ -955,9 +803,6 @@ except_savevars:
         blr
 	
 except_return:
-
-	mfsprg1 %r31
-
 	ld %r0, OFF_REG(0)(%r31)
 	ld %r5, OFF_REG(5)(%r31)
 	ld %r6, OFF_REG(6)(%r31)
@@ -1012,7 +857,7 @@ dump:
 .globl dump_from_pagefault
 dump_from_pagefault:
 	mfsprg1 %r31
-	addi %r8,%r31,HV_CONTEXT_SIZE /* move to next context in stack in case there's nested segfaults */
+	addi %r8,%r31,0x200 /* move to next context in stack in case there's nested segfaults */
 	mtsprg1 %r8
 	
 	mfsrr0 %r4
@@ -1028,25 +873,25 @@ dump_from_pagefault:
 	ori %r4,%r4,crashdump@l
 	mtsrr0 %r4
 
-        // Setup the MSR
-        lis %r4, 0x1000
-        sldi %r4, %r4, 32 // Hypervisor Mode
-        ori %r4, %r4, 0x3030 // Data/Instruction relocate/Machine Check/FPU
-        oris %r4, %r4, 0x200 // VPU
-        mtsrr1 %r4
+    // Setup the MSR
+    lis %r4, 0x1000
+    sldi %r4, %r4, 32 // Hypervisor Mode
+    ori %r4, %r4, 0x3030 // Data/Instruction relocate/Machine Check/FPU
+    oris %r4, %r4, 0x200 // VPU
+    mtsrr1 %r4
 
 	mr %r30,%r3
 	mr %r3,%r31
-	li %r4,HV_CONTEXT_SIZE
+	li %r4,0x200
 	bl memdcbf
 	mr %r3,%r30
 
 	oris %r4,%r31,0x8000
 
-        // Setup the stack
-        lis %r1, exception_stack@h
-        ori %r1, %r1, exception_stack@l
-        addi %r1, %r1, 4096-8 // Put at top of stack
+    // Setup the stack
+    lis %r1, exception_stack@h
+    ori %r1, %r1, exception_stack@l
+    addi %r1, %r1, 4096-8 // Put at top of stack
 
 	rfid
 
@@ -1083,13 +928,6 @@ notnl:
 		beq 1b
 	blr
 
-page_fault:
-
-	li %r3,0
-
-	b dump_from_pagefault
-
-
 puthex:
 	mflr 0
 	mr 30,3
@@ -1108,3 +946,4 @@ puthex:
 	bne 7,.L5
 	mtlr 0
 	blr
+
