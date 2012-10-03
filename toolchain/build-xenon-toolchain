@@ -302,28 +302,33 @@ function freetype_install
 
 function filesystems_install
 {
-	echo -e "Cloning filesystems repositories from LibxenonProject github..."
+	echo -e "Building Filesystems..."
 
-	git clone https://github.com/LibXenonProject/fat-xenon.git || exit 0
-	git clone https://github.com/LibXenonProject/ntfs-xenon.git ||exit 0
-	git clone https://github.com/LibXenonProject/ext2fs-xenon.git || exit 0
-	git clone https://github.com/LibXenonProject/xtaflib.git || exit 0
+	filesystems="fat-xenon ntfs-xenon ext2fs-xenon xtaflib"
 
-	echo -e "Building filesystems..."
-
-	make -C fat-xenon >> $LOGFILE 2>&1 || exit 0
-	make -C ntfs-xenon >> $LOGFILE 2>&1 || exit 0
-	make -C ext2fs-xenon >> $LOGFILE 2>&1 || exit 0
-	make -C xtaflib >> $LOGFILE 2>&1 || exit 0
-
-	echo -e "Installing filesystems..."
-
-	make -C fat-xenon install >> $LOGFILE 2>&1 || exit 0
-	make -C ntfs-xenon install >> $LOGFILE 2>&1 || exit 0
-	make -C ext2fs-xenon install >> $LOGFILE 2>&1 || exit 0
-	make -C xtaflib install >> $LOGFILE 2>&1 || exit 0
-
-	echo -e "Done"
+	for i in $filesystems
+	do
+		echo -e -n "$i: "
+		if [ ! -d $i ]; then
+			echo -e -n "Cloning... "
+			git clone https://github.com/LibXenonProject/$i.git  >> $LOGFILE 2>&1 || exit 0
+		else
+			cd $i
+			git remote update >> $LOGFILE 2>&1
+			git status -uno | grep -q behind
+			if [ 0 -eq $? ]; then
+				echo -e -n "Updating... "
+				git pull >> $LOGFILE 2>&1
+				make clean >> $LOGFILE 2>&1
+			fi
+			cd ..
+		fi
+		echo -e -n "Building... "
+		make -C $i >> $LOGFILE 2>&1 || exit 0
+		echo -e -n "Installing... "
+		make -C $i install >> $LOGFILE 2>&1 || exit 0
+		echo -e "Done"
+	done
 }
 
 function bin2s_install
