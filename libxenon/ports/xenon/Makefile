@@ -19,7 +19,7 @@ INCLUDES = -I ../../drivers -I ../../include \
 
 CFLAGS = -g -mcpu=cell -mtune=cell -Os \
 	-maltivec \
-	-ffunction-sections -fno-builtin-printf -fdata-sections \
+	-ffunction-sections -fdata-sections \
 	-Wall -Wno-format -Wno-attributes -I. -DBYTE_ORDER=BIG_ENDIAN \
 	-m32 -fno-pic -mpowerpc64 \
 	-D_CFE_=1 -DENDIAN_BIG=1 \
@@ -46,8 +46,8 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/newlib/xenon_syscalls.o \
 	../../drivers/nocfe/lib_malloc.o \
 	../../drivers/nocfe/lib_queue.o \
-	../../drivers/pci/io.o \
 	../../drivers/pci/interrupt.o\
+	../../drivers/pci/io.o \
 	../../drivers/ppc/atomic.o \
 	../../drivers/ppc/cache.o \
 	../../drivers/ppc/except.o \
@@ -92,36 +92,41 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/lwip/api/netifapi.o \
 	../../drivers/lwip/api/sockets.o \
 	../../drivers/lwip/api/tcpip.o \
-	../../drivers/lwip/core/def.o \
-	../../drivers/lwip/core/dhcp.o \
 	../../drivers/lwip/core/dns.o \
 	../../drivers/lwip/core/init.o \
-	../../drivers/lwip/core/ipv4/icmp.o \
+	../../drivers/lwip/core/tcp_in.o \
 	../../drivers/lwip/core/ipv4/inet_chksum.o \
 	../../drivers/lwip/core/ipv4/inet.o \
-	../../drivers/lwip/core/ipv4/ip_addr.o \
-	../../drivers/lwip/core/ipv4/ip_frag.o \
-	../../drivers/lwip/core/ipv4/ip.o \
 	../../drivers/lwip/core/mem.o \
 	../../drivers/lwip/core/memp.o \
 	../../drivers/lwip/core/netif.o \
 	../../drivers/lwip/core/pbuf.o \
-	../../drivers/lwip/core/raw.o \
 	../../drivers/lwip/core/stats.o \
 	../../drivers/lwip/core/sys.o \
-	../../drivers/lwip/core/tcp_in.o \
 	../../drivers/lwip/core/tcp.o \
+	../../drivers/lwip/core/ipv4/ip_addr.o \
+	../../drivers/lwip/core/ipv4/icmp.o \
+	../../drivers/lwip/core/ipv4/ip.o \
+	../../drivers/lwip/core/ipv4/ip_frag.o \
 	../../drivers/lwip/core/tcp_out.o \
-	../../drivers/lwip/core/timers.o \
 	../../drivers/lwip/core/udp.o \
 	../../drivers/lwip/netif/etharp.o \
-	../../drivers/lwip/xenon/netif/enet.o \
+	../../drivers/lwip/core/dhcp.o \
+	../../drivers/lwip/core/raw.o \
+	../../drivers/lwip/core/def.o \
+	../../drivers/lwip/core/timers.o \
 	../../drivers/lwip/xenon/src/lib.o \
+	../../drivers/lwip/xenon/netif/enet.o \
 	../../drivers/lwip/xenon/src/sys_arch.o \
-	../../drivers/network/network.o \
+	../../drivers/network/network.o\
 	../../drivers/elf/elf.o \
 	../../drivers/elf/elf_run.o \
 	../../drivers/libfdt/fdt.o \
+	../../drivers/libfdt/fdt_ro.o \
+	../../drivers/libfdt/fdt_rw.o \
+	../../drivers/libfdt/fdt_strerror.o \
+	../../drivers/libfdt/fdt_sw.o \
+	../../drivers/libfdt/fdt_wip.o \
 	../../drivers/threads/threads.o \
 	../../drivers/threads/c_threads.o \
 	../../drivers/threads/debug.o \
@@ -130,12 +135,7 @@ LIBOBJS = crti.o crtn.o \
 	../../drivers/threads/gdbroutines.o \
 	../../drivers/threads/mutex.o \
 	../../drivers/threads/cond.o \
-	../../drivers/threads/breakpoint.o \
-	../../drivers/libfdt/fdt_ro.o \
-	../../drivers/libfdt/fdt_rw.o \
-	../../drivers/libfdt/fdt_strerror.o \
-	../../drivers/libfdt/fdt_sw.o \
-	../../drivers/libfdt/fdt_wip.o
+	../../drivers/threads/breakpoint.o
 
 # Build rules
 all: libxenon.a

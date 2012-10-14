@@ -86,7 +86,6 @@ extern "C" {
 int xenos_is_initialized();
 void xenos_init(int videoMode);
 int xenos_is_overscan();
-int xenos_is_initialized();
 
 #ifdef __cplusplus
 };

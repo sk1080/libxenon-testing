@@ -159,7 +159,7 @@ function gdb_install
 	fi;
 	
 	echo -e "Extracting gdb..."
-	tar xfj $GDB.tar.bz2 >> $LOGFILE 2>&1 && cat $GDB.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
+	tar xfj $GDB.tar.bz2 >> $LOGFILE 2>&1 && cat gdb.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
 	
 	cd build
 	

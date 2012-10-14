@@ -288,11 +288,12 @@ dhcp_select(struct netif *netif)
     dhcp_option(dhcp, DHCP_OPTION_SERVER_ID, 4);
     dhcp_option_long(dhcp, ntohl(ip4_addr_get_u32(&dhcp->server_ip_addr)));
 
-    dhcp_option(dhcp, DHCP_OPTION_PARAMETER_REQUEST_LIST, 4/*num options*/);
+    dhcp_option(dhcp, DHCP_OPTION_PARAMETER_REQUEST_LIST, 5/*num options*/);
     dhcp_option_byte(dhcp, DHCP_OPTION_SUBNET_MASK);
     dhcp_option_byte(dhcp, DHCP_OPTION_ROUTER);
     dhcp_option_byte(dhcp, DHCP_OPTION_BROADCAST);
     dhcp_option_byte(dhcp, DHCP_OPTION_DNS_SERVER);
+    dhcp_option_byte(dhcp, DHCP_OPTION_BOOTFILE);
 
 #if LWIP_NETIF_HOSTNAME
     if (netif->hostname != NULL) {
@@ -513,6 +514,7 @@ dhcp_handle_ack(struct netif *netif)
   ip_addr_set_zero(&dhcp->offered_gw_addr);
 #if LWIP_DHCP_BOOTP_FILE
   ip_addr_set_zero(&dhcp->offered_si_addr);
+  dhcp->boot_server_name[0] = 0;
 #endif /* LWIP_DHCP_BOOTP_FILE */
 
   /* lease time given? */
@@ -542,9 +544,12 @@ dhcp_handle_ack(struct netif *netif)
   ip_addr_copy(dhcp->offered_ip_addr, dhcp->msg_in->yiaddr);
 
 #if LWIP_DHCP_BOOTP_FILE
-  /* copy boot server address,
+  /* copy boot server address and server name,
      boot file name copied in dhcp_parse_reply if not overloaded */
   ip_addr_copy(dhcp->offered_si_addr, dhcp->msg_in->siaddr);
+  strncpy(dhcp->boot_server_name, (const char *)dhcp->msg_in->sname, DHCP_SNAME_LEN);
+  /* make sure the string is really NULL-terminated */
+  dhcp->boot_server_name[DHCP_SNAME_LEN-1] = 0;
 #endif /* LWIP_DHCP_BOOTP_FILE */
 
   /* subnet mask given? */
@@ -881,11 +886,13 @@ dhcp_discover(struct netif *netif)
     dhcp_option(dhcp, DHCP_OPTION_MAX_MSG_SIZE, DHCP_OPTION_MAX_MSG_SIZE_LEN);
     dhcp_option_short(dhcp, DHCP_MAX_MSG_LEN(netif));
 
-    dhcp_option(dhcp, DHCP_OPTION_PARAMETER_REQUEST_LIST, 4/*num options*/);
+    dhcp_option(dhcp, DHCP_OPTION_PARAMETER_REQUEST_LIST, 6/*num options*/);
     dhcp_option_byte(dhcp, DHCP_OPTION_SUBNET_MASK);
     dhcp_option_byte(dhcp, DHCP_OPTION_ROUTER);
     dhcp_option_byte(dhcp, DHCP_OPTION_BROADCAST);
     dhcp_option_byte(dhcp, DHCP_OPTION_DNS_SERVER);
+    dhcp_option_byte(dhcp, DHCP_OPTION_TFTP_SERVERNAME);
+    dhcp_option_byte(dhcp, DHCP_OPTION_BOOTFILE);
 
     dhcp_option_trailer(dhcp);
 
@@ -1426,6 +1433,13 @@ again:
       case(DHCP_OPTION_T2):
         LWIP_ASSERT("len == 4", len == 4);
         decode_idx = DHCP_OPTION_IDX_T2;
+        break;
+      case(DHCP_OPTION_BOOTFILE):
+        /* copy bootp file name, don't care for sname (server hostname) */
+        pbuf_copy_partial(p, dhcp->boot_file_name, DHCP_FILE_LEN-1, val_offset);
+        /* make sure the string is really NULL-terminated */
+        dhcp->boot_file_name[len] = 0;
+        decode_len = 0;
         break;
       default:
         decode_len = 0;
