@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <time/time.h>
+#include <xb360/xb360.h>
 #include "xenon_sfcx.h"
 
 struct sfc sfc = {0};
@@ -428,16 +430,16 @@ int rawflash_writeImage(int len, int f)
 	return 1;
 }
 
-void try_rawflash(char *filename)
+int try_rawflash(char *filename)
 {
 	struct stat s;
 	int size;
 	int f = open(filename, O_RDONLY);
 	if (f < 0)
 	{
-		return;
+		return f;
 	}
-        printf(" * rawflash v4 started (by cOz)\n");
+	printf(" * rawflash v4 started (by cOz)\n");
         
 	fstat(f, &s);
 	size = s.st_size;
@@ -449,10 +451,10 @@ void try_rawflash(char *filename)
 	{
 		printf("error: %s - size %d is not valid image size!\n", filename, size);
 		close(f);
-		return;
+		return -1;
 	}
-        printf("\n * found '%s'. press power NOW if you don't want to flash the NAND.\n",filename);
-        delay(15);
+    printf("\n * found '%s'. press power NOW if you don't want to flash the NAND.\n",filename);
+    delay(15);
         
 	printf("%s opened OK, attempting to write 0x%x bytes to flash...\n",filename, size);
 	if(rawflash_writeImage(size, f) == 1)
@@ -464,7 +466,8 @@ void try_rawflash(char *filename)
 	if(blockbuf != NULL)
 		free(blockbuf);
         
-        for(;;); // loop
+    for(;;); // loop
+    return -1;
 }
 
 /*
@@ -500,6 +503,11 @@ int sfcx_read_metadata_type(void)
 
 unsigned int sfcx_init(void)
 {
+	if ((xenon_get_PCIBridgeRevisionID() >= 0x70) && (sfcx_readreg(SFCX_PHISON) != 0)) {
+		printf(" ! SFCX: Unsupported Type - PHISON eMMC\n");
+		return 3;
+	}
+	
 	unsigned int config = sfcx_readreg(SFCX_CONFIG);
 
 	if (sfc.initialized) return config;
