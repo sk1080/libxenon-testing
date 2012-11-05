@@ -86,6 +86,12 @@ extern "C" {
 #define XE_FILL_WIREFRAME 0x25
 #define XE_FILL_SOLID 0x00
 
+#define XE_COLOR_MASK_BLUE 1
+#define XE_COLOR_MASK_GREEN 2
+#define XE_COLOR_MASK_RED 4
+#define XE_COLOR_MASK_ALPHA	8
+
+
 struct XenosLock
 {
 	void *start;
@@ -299,6 +305,8 @@ struct XenosDevice
 	
 	int scissor_enable;
 	int scissor_ltrb[4];
+	
+	u32 color_mask;
 };
 
 void Xe_Init(struct XenosDevice *xe);
