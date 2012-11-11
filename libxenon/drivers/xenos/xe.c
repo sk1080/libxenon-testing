@@ -993,13 +993,28 @@ void Xe_Init(struct XenosDevice *xe)
 	
 	xe->clear_color=0; // color clear: black
 	xe->clear_stencil_z=0xffffff00; // zbuffer / stencil clear: z to -1, stencil to 0
+	
+	// reverse Z
+	xe->vp_znear = 1.0f;
+	xe->vp_zfar = 0.f;
+	
+	xe->vp_xres = xe->default_fb.width;
+	xe->vp_yres = xe->default_fb.height;
+	
+	
+	xe->vp_xoffset = 0;
+	xe->vp_yoffset = 0;
+	
+	
+	// RGBA
+	xe->color_mask = 0xf;
 }
 
 void Xe_SetRenderTarget(struct XenosDevice *xe, struct XenosSurface *rt)
 {
 	xe->rt = rt;
-	xe->vp_xres = rt->width;
-	xe->vp_yres = rt->height;
+	//xe->vp_xres = rt->width;
+	//xe->vp_yres = rt->height;
 
 	xe->msaa_samples = 0;
 	xe->edram_colorformat = 0;
@@ -1087,7 +1102,7 @@ void Xe_ResolveInto(struct XenosDevice *xe, struct XenosSurface *surface, int so
 	Xe_pSetEDRAMLayout(xe);
 
 	rput32(0x00002104); 
-		rput32(0x0000000f); // colormask 
+		rput32(xe->color_mask); // colormask 
 	rput32(0x0005210f); 
 		rput32(0x44000000); rput32(0x44000000);
 		rput32(0xc3b40000); rput32(0x43b40000); 
@@ -1714,6 +1729,7 @@ void Xe_pSetState(struct XenosDevice *xe)
 		if (xe->scissor_enable)
 			Xe_pSetSurfaceClip(xe, 0, 0, xe->scissor_ltrb[0], xe->scissor_ltrb[1], xe->scissor_ltrb[2], xe->scissor_ltrb[3]);
 		else
+			// Xe_pSetSurfaceClip(xe, 0, 0, xe->vp_xoffset, xe->vp_yoffset, xe->vp_xres, xe->vp_yres);
 			Xe_pSetSurfaceClip(xe, 0, 0, 0, 0, xe->vp_xres, xe->vp_yres);
 		
 		Xe_pSetEDRAMLayout(xe);
@@ -1728,12 +1744,14 @@ void Xe_pSetState(struct XenosDevice *xe)
 			rput32(xe->stencildata[0]);
 			rput32(xe->stencildata[1]);
 			rputf(xe->alpharef); /* this does not work. */
-			rputf(xe->vp_xres / 2.0);
-			rputf(xe->vp_xres / 2.0);
+			
+			rputf((xe->vp_xres - xe->vp_xoffset) / 2.0);
+			rputf((xe->vp_xres / 2.0));
 			rputf(-xe->vp_yres / 2.0);
 			rputf(xe->vp_yres / 2.0);
-			rputf(1.0);
-			rputf(0.0);
+			
+			rputf(xe->vp_znear);
+			rputf(xe->vp_zfar);
 
 		int vals[] = {0, 2 | (4 << 13), 4 | (6 << 13)};
 		rput32(0x00002301);
@@ -2079,7 +2097,8 @@ struct XenosSurface *Xe_CreateTexture(struct XenosDevice *xe, unsigned int width
 	}
 	assert(bypp);
 	
-	int wpitch = (width * bypp + 127) &~127;
+	int walign = (128/bypp)-1;
+	int wpitch = (width * bypp + walign) &~walign;
 	int hpitch = (height + 31) &~31;
 	
 	surface->width = width;
@@ -2142,4 +2161,16 @@ int Xe_IsVBlank(struct XenosDevice *xe)
 {
 //	printf("%08x\n", r32(0x6534));
 	return r32(0x6534) & 0x1000;
+}
+
+void Xe_SetViewport(struct XenosDevice *xe, int x, int y, int w, int h, float znear, float zfar)
+{
+	xe->dirty |= DIRTY_MISC;
+	xe->vp_xres = w;
+	xe->vp_yres = h;
+	xe->vp_xoffset = x;
+	xe->vp_yoffset = y;
+	xe->vp_znear = znear;
+	xe->vp_zfar = zfar;
+
 }

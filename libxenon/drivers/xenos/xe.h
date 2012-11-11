@@ -86,6 +86,12 @@ extern "C" {
 #define XE_FILL_WIREFRAME 0x25
 #define XE_FILL_SOLID 0x00
 
+#define XE_COLOR_MASK_BLUE 1
+#define XE_COLOR_MASK_GREEN 2
+#define XE_COLOR_MASK_RED 4
+#define XE_COLOR_MASK_ALPHA	8
+
+
 struct XenosLock
 {
 	void *start;
@@ -277,6 +283,8 @@ struct XenosDevice
 	int last_wptr;
 	
 	int vp_xres, vp_yres;
+	int vp_xoffset, vp_yoffset;
+	float vp_znear, vp_zfar;
 	int frameidx;
 	
 	u32 clear_color;
@@ -297,6 +305,8 @@ struct XenosDevice
 	
 	int scissor_enable;
 	int scissor_ltrb[4];
+	
+	u32 color_mask;
 };
 
 void Xe_Init(struct XenosDevice *xe);
@@ -350,6 +360,7 @@ void Xe_SetAlphaTestEnable(struct XenosDevice *xe, int enable);
 void Xe_SetAlphaFunc(struct XenosDevice *xe, unsigned int func);
 void Xe_SetAlphaRef(struct XenosDevice *xe, float alpharef);
 void Xe_SetScissor(struct XenosDevice *xe, int enable, int left, int top, int right, int bottom);
+void Xe_SetViewport(struct XenosDevice *xe, int x, int y, int w, int h, float znear, float zfar);
 
 	/* bfff is a bitfield {backface,frontface} */
 void Xe_SetStencilEnable(struct XenosDevice *xe, unsigned int enable);
