@@ -10,7 +10,7 @@ const char hexchars[]="0123456789abcdef";
 
 int threads_suspended = 0;
 
-int mode;
+static int mode;
 
 void set_mode(int number)
 {

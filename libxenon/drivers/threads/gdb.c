@@ -830,6 +830,8 @@ int gdb_debug_routine(unsigned int code, CONTEXT *context)
 		while(thread->WaitingInHandler);
 	}
 
+	signal = 3; //Reset signal
+
     return 1;
 }
 
