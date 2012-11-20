@@ -264,7 +264,7 @@ int parse_cmd(char * buffer)
 					else
 					{
 
-						sprintf(buffer, "QC%i", otherthread->ThreadId + 1);
+						sprintf(buffer, "QC%x", otherthread->ThreadId + 1);
 					}
 					putpacket(buffer);
 					break;
@@ -498,6 +498,7 @@ int parse_cmd(char * buffer)
 			//TODO
 			active = 0;
 			running = 1;
+			signal = 3; //Reset signal
 			resume_threads();
 			break;
 		}
@@ -803,6 +804,7 @@ int gdb_debug_routine(unsigned int code, CONTEXT *context)
 		break;
 
 		default:
+			printf("Unknown except code: %i\n", code);
 			signal = 0;
 		break;
 	}
@@ -829,8 +831,6 @@ int gdb_debug_routine(unsigned int code, CONTEXT *context)
 		thread->WaitingInHandler = 1;
 		while(thread->WaitingInHandler);
 	}
-
-	signal = 3; //Reset signal
 
     return 1;
 }
