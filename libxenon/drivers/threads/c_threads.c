@@ -1096,6 +1096,12 @@ unsigned int thread_idle_ipi(unsigned int context)
 extern void newlib_thread_init();
 extern void newlib_thread_shutdown();
 
+//Is the scheduler running?
+int threading_status()
+{
+	return threading_init_check;
+}
+
 // Shuts down threading
 void threading_shutdown()
 {

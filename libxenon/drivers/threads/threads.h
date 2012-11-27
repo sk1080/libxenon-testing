@@ -196,6 +196,8 @@ typedef struct _THREAD_LIST
 void threading_init();
 // Shutdown
 void threading_shutdown();
+// Status
+int threading_status();
 
 // Thread management
 
