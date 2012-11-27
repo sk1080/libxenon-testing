@@ -117,6 +117,8 @@ static int net_getpacket(char * buffer)
 				return 0;
 			}
 
+			thread_sleep(50);
+
 			chksum = 1; xmitsum = 0; //avoid lols
 			continue;
 		}
@@ -312,7 +314,7 @@ int parse_cmd(char * buffer)
 					char * ptr = &buffer[17];
 					hexToInt(&ptr, &thread);
 					ptr = buffer;
-					PTHREAD pthr = thread_get_pool(thread);
+					PTHREAD pthr = thread_get_pool(thread - 1);
 					sprintf(tempbuffer, "No Name");
 					if(pthr)
 					{
