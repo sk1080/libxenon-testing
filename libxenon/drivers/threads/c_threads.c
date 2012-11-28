@@ -762,6 +762,8 @@ PTHREAD thread_create(void* entrypoint, unsigned int stack_size,
             pthr->Context.Gpr[3] = (unsigned int)entrypoint; // Entry point
             pthr->Context.Gpr[4] = (unsigned int)argument; // Argument
             pthr->Context.Msr = 0x100000000200B030; // Machine State
+
+            _REENT_INIT_PTR(&pthr->local_reent); //Newlib REENT
         }
     }
     
@@ -981,6 +983,8 @@ PTHREAD thread_create_idle_thread()
         // Set priority
         pthr->Priority = 7;
         pthr->MaxPriorityBoost = 5;
+
+        _REENT_INIT_PTR(&pthr->local_reent); //Newlib REENT
     }
     
     ThreadList.FirstThread->PreviousThreadFull = 
@@ -1142,7 +1146,6 @@ void threading_init()
         printf("Threading already init'd!\n");
         return;
     }
-    threading_init_check = 1;
 
     // Init pci irq
     pci_irq_init();
@@ -1191,6 +1194,8 @@ void threading_init()
     printf("All threads online!\n");
     
     printf("Thread init complete!\n");
+
+    threading_init_check = 1;
 }
 
 // Initialize a DPC

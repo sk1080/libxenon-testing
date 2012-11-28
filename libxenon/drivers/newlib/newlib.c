@@ -13,6 +13,7 @@
 #include <sys/unistd.h>
 #include <diskio/disc_io.h>
 #include <xenon_soc/xenon_power.h>
+#include <threads/threads.h>
 
 #include <debug.h>
 
@@ -116,6 +117,16 @@ void _exit(int status) {
 	}
 
 	for(;;);
+}
+
+struct _reent * __getreent (void)//Get thread specific(if shed is running) newlib reent structure
+{
+	if(threading_status())
+	{
+		PTHREAD thr = thread_get_current();
+		return &thr->local_reent;
+	}
+	return _impure_ptr;//Fallback to single structure for all threads(errno/etc unsafe for hardware threads)
 }
 
 void * sbrk(ptrdiff_t incr) {

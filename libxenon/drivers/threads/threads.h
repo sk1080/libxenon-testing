@@ -1,6 +1,8 @@
 #ifndef THREADS_H
 #define	THREADS_H
 
+#include <sys/reent.h>
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
@@ -179,7 +181,9 @@ typedef struct _THREAD
     char * StackBase; // The bottom of our stack // 0x278
     unsigned int StackSize; // The size of our stack // 0x27C
     
-} THREAD, *PTHREAD; // 0x27C
+    struct _reent local_reent; //Newlib REENT
+
+} THREAD, *PTHREAD;
 
 // A list of threads
 typedef struct _THREAD_LIST
