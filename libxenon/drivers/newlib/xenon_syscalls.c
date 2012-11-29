@@ -15,6 +15,8 @@
 #include <ppc/atomic.h>
 #include <ppc/register.h>
 
+#include <threads/threads.h>
+
 #include <xenon_soc/xenon_power.h>
 #include <xenon_smc/xenon_smc.h>
 
@@ -156,6 +158,11 @@ static void xenon_malloc_lock(struct _reent *_r) {
     unsigned int llo=lockowner;
     unsigned int pir_=mfspr(pir);
 
+    if(threading_status())
+    {
+    	pir_ = thread_get_current()->ThreadId;
+    }
+
     assert(llc >= 0);
     
     unlock(&safety_spinlock);
@@ -184,13 +191,20 @@ static void xenon_malloc_lock(struct _reent *_r) {
 static void xenon_malloc_unlock(struct _reent *_r) {
     lock(&safety_spinlock);
 
+    unsigned int pir_=mfspr(pir);
+
+    if(threading_status())
+    {
+    	pir_ = thread_get_current()->ThreadId;
+    }
+
     int llc=lockcount;
     unsigned int llo=lockowner;
 
 	--lockcount;
 
 	assert(llc > 0);
-	assert(llo == mfspr(pir));
+	assert(llo == pir_);
 
     if (llc == 1)
     {
