@@ -446,6 +446,8 @@ const devoptab_t *devoptab_list[STD_MAX] = {
 	&dotab_stdnull, &dotab_stdnull, &dotab_stdnull, &dotab_stdnull
 };
 
+unsigned int devoptab_locks[STD_MAX];
+
 //---------------------------------------------------------------------------------
 
 int FindDevice(const char* name) {
@@ -545,7 +547,9 @@ int open(const char *file, int flags, int mode) {
 			handle->device = dev;
 			handle->fileStruct = ((void *) handle) + sizeof (__handle);
 
+			lock(&devoptab_locks[dev]);
 			ret = devoptab_list[dev]->open_r(r, handle->fileStruct, file, flags, mode);
+			unlock(&devoptab_locks[dev]);
 
 			if (ret == -1) {
 				__release_handle(fd);
@@ -584,7 +588,11 @@ int read(int fileDesc, void *ptr, size_t len) {
 			fd = (int) handle->fileStruct;
 		}
 		if (devoptab_list[dev]->read_r)
+		{
+			lock(&devoptab_locks[dev]);
 			ret = devoptab_list[dev]->read_r(r, fd, ptr, len);
+			unlock(&devoptab_locks[dev]);
+		}
 	}
 	return ret;
 }
@@ -611,7 +619,11 @@ int write(int fileDesc, const void *ptr, size_t len) {
 			fd = (int) handle->fileStruct;
 		}
 		if (devoptab_list[dev]->write_r)
+		{
+			lock(&devoptab_locks[dev]);
 			ret = devoptab_list[dev]->write_r(r, fd, ptr, len);
+			unlock(&devoptab_locks[dev]);
+		}
 	}
 	return ret;
 }
@@ -640,7 +652,9 @@ int fstat(int fileDesc, struct stat *st) {
 			fd = (int) handle->fileStruct;
 		}
 		if (devoptab_list[dev]->fstat_r) {
+			lock(&devoptab_locks[dev]);
 			ret = devoptab_list[dev]->fstat_r(r, fd, st);
+			unlock(&devoptab_locks[dev]);
 		} else {
 			r->_errno = ENOSYS;
 		}
@@ -656,7 +670,9 @@ int stat(const char *file, struct stat *st) {
 	dev = FindDevice(file);
 
 	if (dev != -1 && devoptab_list[dev]->stat_r) {
+		lock(&devoptab_locks[dev]);
 		ret = devoptab_list[dev]->stat_r(r, file, st);
+		unlock(&devoptab_locks[dev]);
 	} else {
 		ret = -1;
 		r->_errno = ENODEV;
@@ -674,7 +690,9 @@ int statvfs(const char *path, struct statvfs *buf) {
 
 	if (device != -1 && devoptab_list[device]->statvfs_r) {
 
+		lock(&devoptab_locks[device]);
 		ret = devoptab_list[device]->statvfs_r(r, path, buf);
+		unlock(&devoptab_locks[device]);
 
 	} else {
 		r->_errno = ENOSYS;
@@ -704,7 +722,11 @@ int fsync(int fileDesc) {
 		fd = (int) handle->fileStruct;
 
 		if (devoptab_list[dev]->fsync_r)
+		{
+			lock(&devoptab_locks[dev]);
 			ret = devoptab_list[dev]->fsync_r(_REENT, fd);
+			unlock(&devoptab_locks[dev]);
+		}
 	}
 
 	return ret;
@@ -731,7 +753,11 @@ int ftruncate(int fileDesc, off_t len) {
 		fd = (int) handle->fileStruct;
 
 		if (devoptab_list[dev]->ftruncate_r)
+		{
+			lock(&devoptab_locks[dev]);
 			ret = devoptab_list[dev]->ftruncate_r(_REENT, fd, len);
+			unlock(&devoptab_locks[dev]);
+		}
 	}
 
 	return ret;
@@ -747,7 +773,9 @@ int link(const char *existing, const char *new) {
 
 	if (sourceDev == destDev) {
 		if (devoptab_list[destDev]->link_r) {
+			lock(&devoptab_locks[destDev]);
 			ret = devoptab_list[destDev]->link_r(r, existing, new);
+			unlock(&devoptab_locks[destDev]);
 		} else {
 			r->_errno = ENOSYS;
 		}
@@ -785,7 +813,11 @@ _off_t lseek(int fileDesc, _off_t pos, int dir) {
 		}
 
 		if (devoptab_list[dev]->seek_r)
+		{
+			lock(&devoptab_locks[dev]);
 			ret = devoptab_list[dev]->seek_r(r, fd, pos, dir);
+			unlock(&devoptab_locks[dev]);
+		}
 
 	}
 	return ret;
@@ -803,7 +835,9 @@ int rename(const char *existing, const char *newName) {
 
 	if (sourceDev == destDev) {
 		if (devoptab_list[destDev]->rename_r) {
+			lock(&devoptab_locks[destDev]);
 			ret = devoptab_list[destDev]->rename_r(r, existing, newName);
+			unlock(&devoptab_locks[destDev]);
 		} else {
 			r->_errno = ENOSYS;
 		}
@@ -823,7 +857,9 @@ int unlink(const char *name) {
 
 	dev = FindDevice(name);
 	if (dev != -1 && devoptab_list[dev]->unlink_r) {
+		lock(&devoptab_locks[dev]);
 		ret = devoptab_list[dev]->unlink_r(r, name);
+		unlock(&devoptab_locks[dev]);
 	} else {
 		ret = -1;
 		r->_errno = ENODEV;
@@ -850,7 +886,11 @@ int close(int fileDesc) {
 			fd = (unsigned int) handle->fileStruct;
 
 			if (devoptab_list[dev]->close_r)
+			{
+				lock(&devoptab_locks[dev]);
 				ret = devoptab_list[dev]->close_r(ptr, fd);
+				unlock(&devoptab_locks[dev]);
+			}
 
 			__release_handle(fileDesc);
 		}
@@ -1084,7 +1124,9 @@ static DIR_ITER * __diropen(const char *path) {
 			handle->device = dev;
 			handle->dirStruct = ((void *) handle) + sizeof (DIR_ITER);
 
+			lock(&devoptab_locks[dev]);
 			dir = devoptab_list[dev]->diropen_r(r, handle, path);
+			unlock(&devoptab_locks[dev]);
 
 			if (dir == NULL) {
 				free(handle);
@@ -1110,7 +1152,9 @@ static int __dirreset(DIR_ITER *dirState) {
 		dev = dirState->device;
 
 		if (devoptab_list[dev]->dirreset_r) {
+			lock(&devoptab_locks[dev]);
 			ret = devoptab_list[dev]->dirreset_r(r, dirState);
+			unlock(&devoptab_locks[dev]);
 		} else {
 			r->_errno = ENOSYS;
 		}
@@ -1127,7 +1171,9 @@ static int __dirnext(DIR_ITER *dirState, char *filename, struct stat *filestat) 
 		dev = dirState->device;
 
 		if (devoptab_list[dev]->dirnext_r) {
+			lock(&devoptab_locks[dev]);
 			ret = devoptab_list[dev]->dirnext_r(r, dirState, filename, filestat);
+			unlock(&devoptab_locks[dev]);
 		} else {
 			r->_errno = ENOSYS;
 		}
@@ -1144,7 +1190,9 @@ static int __dirclose(DIR_ITER *dirState) {
 		dev = dirState->device;
 
 		if (devoptab_list[dev]->dirclose_r) {
+			lock(&devoptab_locks[dev]);
 			ret = devoptab_list[dev]->dirclose_r(r, dirState);
+			unlock(&devoptab_locks[dev]);
 		} else {
 			r->_errno = ENOSYS;
 		}
