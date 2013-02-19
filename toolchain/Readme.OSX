@@ -1,0 +1,22 @@
+Tested on latest OSX(10.8.2), Xcode, and Tools(Jan 2013)
+
+sudo where needed...
+
+Install Xcode, Xcode command line tools, macports
+
+port install wget
+port install mpfr
+port install libmpc
+port install gnutar
+port install xz
+
+./build-xenon-toolchain toolchain
+add lines to ~/.profile
+
+reload all terminals
+
+xenon-ranlib /usr/local/xenon/usr/lib/libxenon.a
+
+./build-xenon-toolchain libs (name sure it compiles FS)
+
+and you are good to go! (hopefully)
