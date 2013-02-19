@@ -7,6 +7,8 @@ TARGET=xenon
 PREFIX=/usr/local/xenon # Install location of your final toolchain
 PARALLEL=
 
+TAR=tar
+
 BINUTILS=binutils-2.22
 GCC=gcc-4.7.1
 NEWLIB=newlib-1.20.0
@@ -81,7 +83,7 @@ function toolchain_install
 
         if $BUILD_BINUTILS; then
         echo -e "Extracting binutils..."
-        tar xfj $BINUTILS.tar.bz2 >> $LOGFILE 2>&1 && cat binutils.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
+        $TAR xfj $BINUTILS.tar.bz2 >> $LOGFILE 2>&1 && cat binutils.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
         cd build
         echo -e "Configuring binutils..."
         ../$BINUTILS/configure --target=$TARGET --prefix=$PREFIX  --enable-multilib   --disable-nls --disable-werror >> $LOGFILE 2>&1 || exit 0
@@ -95,7 +97,7 @@ function toolchain_install
 
         if $BUILD_GCC; then
         echo -e "Extracting gcc..."
-        tar xfj $GCC.tar.bz2 >> $LOGFILE 2>&1 && cat gcc.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
+        $TAR xfj $GCC.tar.bz2 >> $LOGFILE 2>&1 && cat gcc.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
         cd build
         echo -e "Configuring gcc..."
         ../$GCC/configure --target=$TARGET --prefix=$PREFIX --with-libiconv-prefix=/opt/local -enable-interwork \
@@ -113,7 +115,7 @@ function toolchain_install
 
         if $BUILD_NEWLIB; then
         echo -e "Extracting newlib..."
-        tar xfz $NEWLIB.tar.gz >> $LOGFILE 2>&1 && cat newlib.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
+        $TAR xfz $NEWLIB.tar.gz >> $LOGFILE 2>&1 && cat newlib.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
         cd build
         echo -e "Configuring newlib..."
         ../$NEWLIB/configure --target=$TARGET --prefix=$PREFIX  --enable-multilib --disable-nls \
@@ -159,7 +161,7 @@ function gdb_install
 	fi;
 	
 	echo -e "Extracting gdb..."
-	tar xfj $GDB.tar.bz2 >> $LOGFILE 2>&1 && cat gdb.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
+	$TAR xfj $GDB.tar.bz2 >> $LOGFILE 2>&1 && cat gdb.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
 	
 	cd build
 	
@@ -184,7 +186,7 @@ function zlib_install
 
 	echo -e "Extracting zlib..."
 	rm -rf $ZLIB
-	tar xjf $ZLIB.tar.bz2 >> $LOGFILE 2>&1 || exit 0
+	$TAR xjf $ZLIB.tar.bz2 >> $LOGFILE 2>&1 || exit 0
 	cd $ZLIB
 
 	export TARGET_SAVE=$TARGET
@@ -192,9 +194,10 @@ function zlib_install
 	export CFLAGS="-mcpu=cell -mtune=cell -m32 -fno-pic -mpowerpc64 -L$DEVKITXENON/xenon/lib/32/ -T$DEVKITXENON/app.lds -u read -u _start -u exc_base -L$DEVKITXENON/usr/lib -I$DEVKITXENON/usr/include"
 	export LDFLAGS="$CFLAGS"
 	export TARGET=`gcc -v 2>&1 | sed -n '2p' | awk '{print $2}'`
+	export CROSS_PREFIX=xenon-
 
 	echo -e "Configuring zlib..."
-	./configure --prefix=$DEVKITXENON/usr >> $LOGFILE 2>&1 || exit 0
+	uname=Linux ./configure --prefix=$DEVKITXENON/usr >> $LOGFILE 2>&1 || exit 0
 
 	sed '/cp $(SHAREDLIBV) $(DESTDIR)$(sharedlibdir)/d' Makefile > Makefile.xenon
 
@@ -222,7 +225,7 @@ function libpng_install
 
 	echo -e "Extracting libpng..."
 	rm -rf $LIBPNG
-	tar xJf $LIBPNG.tar.xz >> $LOGFILE 2>&1 || exit 0
+	$TAR xJf $LIBPNG.tar.xz >> $LOGFILE 2>&1 || exit 0
 	cd $LIBPNG
 
 	export CC=$TARGET-gcc
@@ -255,7 +258,7 @@ function bzip2_install
 
 	echo -e "Extracting bzip2..."
 	rm -rf $BZIP2
-	tar xzf $BZIP2.tar.gz >> $LOGFILE 2>&1 && cat ../libxenon/ports/bzip2/bzip2.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
+	$TAR xzf $BZIP2.tar.gz >> $LOGFILE 2>&1 && cat ../libxenon/ports/bzip2/bzip2.diff | patch -p0 >> $LOGFILE 2>&1 || exit 0
 	cd $BZIP2
 
 	echo -e "Building bzip2..."
@@ -276,7 +279,7 @@ function freetype_install
 	
 	echo -e "Extracting freetype..."
 	rm -rf $FREETYPE
-	tar xzf $FREETYPE.tar.gz >> $LOGFILE 2>&1 || exit 0
+	$TAR xzf $FREETYPE.tar.gz >> $LOGFILE 2>&1 || exit 0
 	cd $FREETYPE
 
 	export CC=$TARGET-gcc
@@ -421,6 +424,10 @@ function check_build-essential
 
 # start
 rm $LOGFILE &>/dev/null
+
+if [ `uname` == "Darwin" ]; then
+    TAR=gnutar
+fi;
 
 if [ "$1" == "toolchain" ]; then
     check_debian
